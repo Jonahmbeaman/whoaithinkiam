@@ -47,8 +47,6 @@ flat values or best guesses, NO jokes:
 - name, birthday (DOB, else "Est. b. <year>"), sex, nationality, location
   (region-level only — never a precise address), occupation, education, languages,
   relationshipStatus (inferred, e.g. "Single (inferred)"; low confidence is fine).
-- height, eyeColor, hairColor: usually "UNKNOWN", confidence 0 — do not invent
-  biometrics.
 
 typology — three reads {system, value, take, confidence}: "16 Personalities"
 (4-letter), "Archetype" (named), "Zodiac (est.)". take is ONE short, pointed,
@@ -120,9 +118,6 @@ const DOSSIER_SCHEMA = {
         name: ratedValue,
         birthday: ratedValue,
         sex: ratedValue,
-        height: ratedValue,
-        eyeColor: ratedValue,
-        hairColor: ratedValue,
         nationality: ratedValue,
         location: ratedValue,
         occupation: ratedValue,
@@ -134,9 +129,6 @@ const DOSSIER_SCHEMA = {
         "name",
         "birthday",
         "sex",
-        "height",
-        "eyeColor",
-        "hairColor",
         "nationality",
         "location",
         "occupation",
@@ -171,10 +163,12 @@ const DOSSIER_SCHEMA = {
       required: ["sun", "moon", "rising"],
     },
     activityClock: {
+      // Length is NOT constrained here: structured outputs reject minItems
+      // values other than 0 or 1, and a 24/24 constraint made every request
+      // fail with a 400. The exact-24 requirement lives in the system prompt,
+      // and DossierView validates the length before rendering the dial.
       type: "array",
       items: { type: "integer" },
-      minItems: 24,
-      maxItems: 24,
     },
     honeytrap: {
       type: "object",

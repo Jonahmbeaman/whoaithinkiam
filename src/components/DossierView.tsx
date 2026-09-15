@@ -173,8 +173,6 @@ export default function DossierView({
     bi("Occupation", b.occupation),
     bi("Education", b.education),
     bi("Languages", b.languages),
-    bi("Height", b.height),
-    bi("Eye Colour", b.eyeColor),
     bi("Status", b.relationshipStatus),
   ];
 

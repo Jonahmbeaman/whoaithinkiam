@@ -25,9 +25,12 @@ export interface BasicInfo {
   name: RatedValue;
   birthday: RatedValue;
   sex: RatedValue;
-  height: RatedValue;
-  eyeColor: RatedValue;
-  hairColor: RatedValue;
+  // Dropped from the schema: the prompt forbade inventing biometrics, so these
+  // were always "UNKNOWN"/0 — dead weight that pushed the grammar over its
+  // size limit. Optional so dossiers compiled before the cut still parse.
+  height?: RatedValue;
+  eyeColor?: RatedValue;
+  hairColor?: RatedValue;
   nationality: RatedValue;
   location: RatedValue; // region-level only
   occupation: RatedValue;
