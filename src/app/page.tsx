@@ -1,65 +1,250 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useState } from "react";
+import type {
+  CaseFile,
+  Dossier,
+  SynthesizeRequest,
+  SynthesizeResponse,
+  WitnessResponse,
+} from "@/lib/types";
+import {
+  deleteCase,
+  exportHistory,
+  getMostRecent,
+  importHistory,
+  loadHistory,
+  saveCase,
+} from "@/lib/storage";
+import { SAMPLE_DOSSIER } from "@/lib/sample";
+import { readSharedCase } from "@/lib/shareLink";
+import Landing from "@/components/Landing";
+import WitnessPicker from "@/components/WitnessPicker";
+import Intake from "@/components/Intake";
+import DossierView from "@/components/DossierView";
+import CaseHistory from "@/components/CaseHistory";
+
+type Step = "landing" | "picker" | "intake" | "dossier";
+
+interface Viewing {
+  id: string; // stored CaseFile id ("" for the specimen)
+  dossier: Dossier;
+  providers: string[];
+  date: string;
+  responses: WitnessResponse[];
+  isSample: boolean;
+}
+
+const MIN_CHARS = 120;
+
+export default function Page() {
+  const [step, setStep] = useState<Step>("landing");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [responses, setResponses] = useState<Record<string, string>>({});
+  const [viewing, setViewing] = useState<Viewing | null>(null);
+  const [compiling, setCompiling] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [history, setHistory] = useState<CaseFile[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+
+  useEffect(() => {
+    setHistory(loadHistory());
+    // A shared link carries the entire case file in the URL fragment. Render it
+    // read-only — someone else's dossier never enters this device's history.
+    void readSharedCase(window.location.hash).then((shared) => {
+      if (!shared) return;
+      setViewing({
+        id: "",
+        dossier: shared.dossier,
+        providers: shared.providers,
+        date: shared.date,
+        responses: [],
+        isSample: false,
+      });
+      setStep("dossier");
+    });
+  }, []);
+
+  function refreshHistory() {
+    setHistory(loadHistory());
+  }
+
+  function begin() {
+    setSelected([]);
+    setResponses({});
+    setError(null);
+    setStep("picker");
+  }
+
+  function toggle(id: string) {
+    setSelected((s) =>
+      s.includes(id) ? s.filter((x) => x !== id) : [...s, id],
+    );
+  }
+
+  function viewSample() {
+    setViewing({
+      id: "",
+      dossier: SAMPLE_DOSSIER,
+      providers: ["chatgpt", "claude"],
+      date: new Date().toISOString(),
+      responses: [],
+      isSample: true,
+    });
+    setStep("dossier");
+  }
+
+  function openCase(file: CaseFile) {
+    setShowHistory(false);
+    setViewing({
+      id: file.id,
+      dossier: file.dossier,
+      providers: file.providers,
+      date: file.date,
+      responses: file.responses,
+      isSample: false,
+    });
+    setStep("dossier");
+  }
+
+  function destroyCurrent() {
+    if (viewing?.id) {
+      deleteCase(viewing.id);
+      refreshHistory();
+    }
+    setViewing(null);
+    setStep("landing");
+  }
+
+  async function compile() {
+    setError(null);
+    const usable = selected.filter(
+      (id) => (responses[id]?.trim().length ?? 0) >= MIN_CHARS,
+    );
+    if (usable.length === 0) {
+      setError("Collect at least one full statement before compiling.");
+      return;
+    }
+
+    const collected: WitnessResponse[] = usable.map((id) => ({
+      provider: id,
+      text: responses[id].trim(),
+      collectedAt: new Date().toISOString(),
+    }));
+
+    const prev = getMostRecent();
+    const payload: SynthesizeRequest = {
+      responses: collected.map((r) => ({ provider: r.provider, text: r.text })),
+      previousDossier: prev
+        ? { date: prev.date, summaryJson: prev.dossier }
+        : null,
+    };
+
+    setCompiling(true);
+    try {
+      const res = await fetch("/api/synthesize", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = (await res.json()) as SynthesizeResponse;
+      if (!data.ok) {
+        setError(data.error);
+        return;
+      }
+      const saved = saveCase({
+        dossier: data.dossier,
+        providers: usable,
+        responses: collected,
+      });
+      refreshHistory();
+      setViewing({
+        id: saved.id,
+        dossier: saved.dossier,
+        providers: saved.providers,
+        date: saved.date,
+        responses: saved.responses,
+        isSample: false,
+      });
+      setStep("dossier");
+    } catch {
+      setError(
+        "Couldn't reach The Agency. Check your connection and try again.",
+      );
+    } finally {
+      setCompiling(false);
+    }
+  }
+
+  async function handleImport(file: File) {
+    try {
+      await importHistory(file);
+      refreshHistory();
+    } catch {
+      // Malformed file — silently ignore.
+    }
+  }
+
+  function handleDelete(id: string) {
+    deleteCase(id);
+    refreshHistory();
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main className="min-h-dvh">
+      {step === "landing" && (
+        <Landing
+          onBegin={begin}
+          onViewSample={viewSample}
+          onOpenHistory={() => setShowHistory(true)}
+          historyCount={history.length}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      )}
+
+      {step === "picker" && (
+        <WitnessPicker
+          selected={selected}
+          onToggle={toggle}
+          onContinue={() => setStep("intake")}
+          onBack={() => setStep("landing")}
+        />
+      )}
+
+      {step === "intake" && (
+        <Intake
+          selected={selected}
+          responses={responses}
+          onChange={(id, text) => setResponses((r) => ({ ...r, [id]: text }))}
+          onCompile={compile}
+          onBack={() => setStep("picker")}
+          compiling={compiling}
+          error={error}
+        />
+      )}
+
+      {step === "dossier" && viewing && (
+        <DossierView
+          dossier={viewing.dossier}
+          providers={viewing.providers}
+          date={viewing.date}
+          responses={viewing.responses}
+          isSample={viewing.isSample}
+          onNewCase={begin}
+          onHome={() => setStep("landing")}
+          onDestroy={destroyCurrent}
+        />
+      )}
+
+      {showHistory && (
+        <CaseHistory
+          files={history}
+          onOpen={openCase}
+          onDelete={handleDelete}
+          onExport={exportHistory}
+          onImport={handleImport}
+          onClose={() => setShowHistory(false)}
+        />
+      )}
+    </main>
   );
 }
