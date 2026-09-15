@@ -26,17 +26,18 @@ that one method and slot it in.
 
 ```bash
 npm install
-# .env.local already holds ANTHROPIC_API_KEY (gitignored).
-npm run dev        # http://localhost:3000
+cp .env.example .env.local   # then add your own ANTHROPIC_API_KEY
+npm run dev                  # http://localhost:3000
 ```
 
 Environment variables (`.env.local`):
 
 - `ANTHROPIC_API_KEY` — **required**, read only by the serverless function.
-- `DOSSIER_MODEL` — optional. Defaults to `claude-opus-4-8`. Set to
-  `claude-sonnet-5` for ~1/5 the cost and faster compiles.
+- `DOSSIER_MODEL` — optional. Defaults to `claude-opus-5`. Set to
+  `claude-sonnet-5` for a cheaper, faster compile.
 
-> ⚠️ Rotate the current key at console.anthropic.com — it was pasted into a chat.
+The key is read only by the serverless function and never reaches the browser.
+`.env*` is gitignored, and no key has ever been committed to this repository.
 
 ## Deploy (Vercel free tier)
 
