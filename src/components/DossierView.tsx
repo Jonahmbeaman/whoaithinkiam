@@ -40,6 +40,12 @@ const MIN_SHEET_H = 780;
 // gets a vote too.
 const MIN_SCALE = 10 / 15.2;
 
+// Read live rather than from state. Both effects below run in the same
+// post-paint flush off the same render, so the effect that measures still sees
+// the pre-update `viewportTooSmall` — checking the query directly is the only
+// way for the measurement to know whether the sheet layout was ever in play.
+const SMALL_VIEWPORT = `(max-width: ${MIN_SHEET_W}px), (max-height: ${MIN_SHEET_H - 1}px)`;
+
 const dash = (v?: string) =>
   v && v.trim() && v.trim().toUpperCase() !== "UNKNOWN" ? v : "—";
 
@@ -369,7 +375,13 @@ export default function DossierView({
   const pageCount = sheets.length;
 
   const turn = useCallback(
-    (d: number) => setPage((p) => Math.min(pageCount - 1, Math.max(0, p + d))),
+    (d: number) =>
+      // Clamp the current value before stepping, not just after: if the sheet
+      // count shrank while mounted, `page` can sit past the end and the first
+      // press back would be a visible no-op.
+      setPage((p) =>
+        Math.min(pageCount - 1, Math.max(0, Math.min(p, pageCount - 1) + d)),
+      ),
     [pageCount],
   );
 
@@ -382,9 +394,7 @@ export default function DossierView({
     // Driven off the viewport rather than off the measured scale: deciding the
     // layout from a measurement that only exists inside one of the layouts
     // would make the two modes able to flip each other back and forth.
-    const mq = window.matchMedia(
-      `(max-width: ${MIN_SHEET_W}px), (max-height: ${MIN_SHEET_H - 1}px)`,
-    );
+    const mq = window.matchMedia(SMALL_VIEWPORT);
     const sync = () => setViewportTooSmall(mq.matches);
     sync();
     mq.addEventListener("change", sync);
@@ -413,7 +423,14 @@ export default function DossierView({
     if (documentMode) return;
     const stage = stageRef.current;
     if (!stage) return;
+    let cancelled = false;
     const compute = () => {
+      // A viewport the media query has already disqualified must never reach
+      // the latch. On a 390px phone availW/PAGE_W is 0.43, far under
+      // MIN_SCALE, so the first measurement would latch contentTooTall for a
+      // reason that has nothing to do with content — and because the latch is
+      // one-way, maximising the window afterwards would never restore sheets.
+      if (cancelled || window.matchMedia(SMALL_VIEWPORT).matches) return;
       // All three sheets stay laid out (inactive ones are transparent, not
       // display:none) so the tallest can be measured. Scaling every page by the
       // same factor stops the type resizing as you turn pages, and means a
@@ -441,7 +458,13 @@ export default function DossierView({
     ro.observe(stage);
     for (const el of sheetRefs.current) if (el) ro.observe(el);
     void document.fonts?.ready.then(compute);
-    return () => ro.disconnect();
+    return () => {
+      // The fonts promise outlives the effect. Left uncancelled it fires
+      // against a detached stage, reads clientHeight 0, computes a negative
+      // scale and latches on that.
+      cancelled = true;
+      ro.disconnect();
+    };
   }, [documentMode, dossier]);
 
   const navBtn =

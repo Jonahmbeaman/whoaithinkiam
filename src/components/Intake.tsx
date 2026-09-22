@@ -75,8 +75,8 @@ export default function Intake({
 
         <h2 className="mt-3 label text-xl text-ink">Collect the statements</h2>
         <p className="mt-2 text-[0.9rem] leading-relaxed text-ink-soft tw">
-          For each source: open it, send the loaded prompt, then paste its full
-          reply back here.
+          For each witness: open it, send the loaded prompt, then paste the
+          full reply back here.
         </p>
 
         <TornDivider className="my-5" />
@@ -154,7 +154,7 @@ export default function Intake({
                   {warnPrompt && (
                     <span className="text-classified">
                       That looks like the prompt, not the reply. Paste the
-                      source&rsquo;s answer.
+                      witness&rsquo;s answer.
                     </span>
                   )}
                   {tooShort && (
@@ -184,7 +184,7 @@ export default function Intake({
             ? "Compiling the file…"
             : usableCount === 0
               ? "Collect at least one statement"
-              : `Compile dossier from ${usableCount} source${usableCount > 1 ? "s" : ""}`}
+              : `Compile dossier from ${usableCount} witness${usableCount > 1 ? "es" : ""}`}
         </button>
       </div>
     </div>

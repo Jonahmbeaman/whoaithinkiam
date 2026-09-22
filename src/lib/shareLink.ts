@@ -21,6 +21,9 @@ const SHARE_PREFIX = "#d=";
 // link that silently breaks.
 const MAX_ENCODED_CHARS = 8000;
 
+/** Ceiling on the decompressed payload. A real dossier is around 4 KB. */
+const MAX_DECODED_CHARS = 200_000;
+
 interface SharedCase {
   v: 1;
   codeName: string;
@@ -114,7 +117,12 @@ export async function readSharedCase(hash: string): Promise<SharedCase | null> {
   // try/catch below would not have helped.
   if (encoded.length > MAX_ENCODED_CHARS) return null;
   try {
-    const parsed = JSON.parse(await gunzip(fromBase64Url(encoded))) as SharedCase;
+    const text = await gunzip(fromBase64Url(encoded));
+    // The character cap above bounds the compressed input, not what it
+    // expands to — gzip reaches roughly 1032:1, so 8000 base64url chars can
+    // still yield megabytes. This bounds the output too.
+    if (text.length > MAX_DECODED_CHARS) return null;
+    const parsed = JSON.parse(text) as SharedCase;
     if (parsed?.v !== 1 || !parsed.dossier?.codeName) return null;
     return parsed;
   } catch {

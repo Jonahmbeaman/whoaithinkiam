@@ -64,16 +64,19 @@ export default function Landing({
         </div>
       </div>
 
-      {/* The full privacy statement. Precise rather than absolute, and every
-          clause has to stay literally true: the ten-minute claim is what the
-          unconditional sweep in guard.ts exists to honour. Shorter
-          restatements elsewhere (the sheet footer, the share sheet) may be
-          briefer but must not contradict this one. */}
+      {/* The full privacy statement. Every clause has to stay literally true,
+          which is why this does not promise a ten-minute deletion: the sweep
+          in guard.ts runs on request, and a serverless instance that freezes
+          between invocations cannot run it at all. "Nothing outlives the
+          server process" is the strongest claim the architecture supports.
+          Shorter restatements elsewhere may be briefer but must not
+          contradict this one. */}
       <p className="mt-6 px-2 text-center text-[0.72rem] leading-relaxed text-paper/50 tw">
         No account, no cookies, no database. We never ask for an AI password —
         you paste each reply yourself. Your statements pass through once and are
-        never written down. Your address is held for ten minutes to stop abuse,
-        then dropped. The only copy is the one you choose to send.
+        never written down. Your address is held in memory alone, purely to
+        rate-limit this page, and nothing about it outlives the server process.
+        The only copy is the one you choose to send.
       </p>
     </div>
   );

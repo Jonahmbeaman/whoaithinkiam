@@ -96,11 +96,14 @@ export function rateLimit(key: string): {
   const cutoff = now - RATE_LIMIT_WINDOW_MS;
   const recent = (hits.get(key) ?? []).filter((t) => t > cutoff);
 
-  // Unconditional sweep, not one gated on map size. The public privacy
-  // statement says an address is held for ten minutes and then dropped, and
-  // that has to be literally true: pruning only on the next request from the
-  // same key meant a caller who never returned stayed in the map for the life
-  // of the instance. The map is small and this runs once per request.
+  // Unconditional sweep, not one gated on map size: pruning only on the next
+  // request from the SAME key meant a caller who never returned stayed in the
+  // map indefinitely. The map is small and this runs once per request.
+  //
+  // What this cannot do is run without traffic. A serverless instance freezes
+  // between invocations, so the last caller of the evening is evicted by the
+  // next request to reach that instance, or by the instance dying — not by a
+  // clock. The public copy is worded to claim only what that supports.
   for (const [k, times] of hits) {
     if (times.every((t) => t <= cutoff)) hits.delete(k);
   }

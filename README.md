@@ -38,8 +38,11 @@ counts and error names, never content.
 
 Three carve-outs, stated rather than glossed:
 
-- The rate limiter holds your IP in memory for ten minutes so the endpoint
-  cannot be drained, then drops it. See `src/lib/guard.ts`.
+- The rate limiter keeps your IP in memory — never on disk — purely to count
+  requests against a ten-minute window. Entries are swept on each request once
+  their window lapses, and nothing survives the server process. It is not a
+  ten-minute deletion guarantee: a serverless instance that freezes between
+  invocations cannot run a sweep. See `src/lib/guard.ts`.
 - Vercel keeps its own platform access logs, as any host does.
 - The share image is a file you save yourself.
 

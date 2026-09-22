@@ -26,6 +26,22 @@ export default function ShareSheet({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [status, setStatus] = useState<string>("");
   const [busy, setBusy] = useState(false);
+  // Built as soon as the sheet opens so the copy handler can write to the
+  // clipboard synchronously. WebKit only honours a clipboard write that is
+  // still associated with the user gesture, and awaiting buildShareUrl inside
+  // the click breaks that association — it would reject with NotAllowedError
+  // on iPhone, which is most of the people a link gets sent to.
+  const [shareUrl, setShareUrl] = useState<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    let live = true;
+    void buildShareUrl({ dossier, date, providers }).then((url) => {
+      if (live) setShareUrl(url);
+    });
+    return () => {
+      live = false;
+    };
+  }, [dossier, date, providers]);
 
   // Only non-identifying content is offered for sharing — never privacy hazards.
   const choices = useMemo(() => {
@@ -78,22 +94,26 @@ export default function ShareSheet({
 
   // The link carries the whole dossier compressed into the URL fragment, so
   // nothing is uploaded and there is no server-side copy to leak.
-  async function handleCopyLink() {
-    setBusy(true);
+  function handleCopyLink() {
     setStatus("");
-    try {
-      const url = await buildShareUrl({ dossier, date, providers });
-      if (!url) {
-        setStatus("This file is too big to travel in a link — send the image.");
-        return;
-      }
-      await navigator.clipboard.writeText(url);
-      setStatus("Link copied. It carries the file itself — nothing was uploaded.");
-    } catch {
-      setStatus("Couldn't copy the link.");
-    } finally {
-      setBusy(false);
+    if (shareUrl === undefined) {
+      setStatus("Still packing the file. One moment.");
+      return;
     }
+    if (shareUrl === null) {
+      setStatus(
+        typeof CompressionStream === "undefined"
+          ? "This browser can't build a link. Send the image instead."
+          : "This file is too big to travel in a link — send the image.",
+      );
+      return;
+    }
+    // No await before this call: see the comment on shareUrl.
+    navigator.clipboard.writeText(shareUrl).then(
+      () =>
+        setStatus("Link copied. It carries the file itself — nothing was uploaded."),
+      () => setStatus("Couldn't copy the link."),
+    );
   }
 
   return (

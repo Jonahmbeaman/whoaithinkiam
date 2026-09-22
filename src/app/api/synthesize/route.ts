@@ -272,12 +272,21 @@ export async function POST(
     return err(tooBig.reason, 413, cors);
   }
 
-  const usable = incoming.filter(
-    (r) =>
-      r &&
-      typeof r.text === "string" &&
-      r.text.trim().length >= MIN_STATEMENT_CHARS,
-  );
+  const usable = incoming
+    .filter(
+      (r) =>
+        r &&
+        typeof r.text === "string" &&
+        r.text.trim().length >= MIN_STATEMENT_CHARS,
+    )
+    // `provider` reaches a template literal in witnessBlock. Unvalidated, an
+    // object with a non-callable toString and valueOf throws during
+    // ToPrimitive — before the try below, so the caller got a bare 500 with
+    // no CORS headers and no {ok:false} body to read.
+    .map((r) => ({
+      provider: typeof r.provider === "string" ? r.provider : "",
+      text: r.text as string,
+    }));
 
   if (usable.length === 0) {
     return err(
@@ -300,9 +309,8 @@ export async function POST(
 
   const userContent = `Compile the dossier from these field statements.\n\n${witnessBlock}`;
 
-  const client = new Anthropic();
-
   try {
+    const client = new Anthropic();
     const message = await client.messages.create({
       model: MODEL,
       max_tokens: 16000,

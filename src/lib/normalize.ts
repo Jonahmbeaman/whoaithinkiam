@@ -52,9 +52,21 @@ function rated(v: unknown): Rated | null {
   return { claim, confidence: pct(v.confidence) };
 }
 
+/**
+ * Hard ceiling on any claim list. The analyst is asked for 4-8, so this is far
+ * above anything legitimate — it exists because a hand-crafted share link can
+ * carry an array of any length, and every entry becomes a DOM node. Without
+ * it, a crafted fragment locks the recipient's tab on render, which nothing
+ * throws on and no error boundary can catch.
+ */
+const MAX_LIST = 64;
+
 function ratedList(v: unknown): Rated[] {
   if (!Array.isArray(v)) return [];
-  return v.map(rated).filter((r): r is Rated => r !== null);
+  return v
+    .slice(0, MAX_LIST)
+    .map(rated)
+    .filter((r): r is Rated => r !== null);
 }
 
 function basicInfo(v: unknown): BasicInfo {
@@ -76,7 +88,7 @@ function basicInfo(v: unknown): BasicInfo {
 
 function typology(v: unknown): TypologyRead[] {
   if (!Array.isArray(v)) return [];
-  return v.filter(isRecord).map((t) => ({
+  return v.slice(0, MAX_LIST).filter(isRecord).map((t) => ({
     system: str(t.system),
     value: str(t.value),
     take: str(t.take),

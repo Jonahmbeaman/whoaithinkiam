@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   OpenFile,
   SynthesizeRequest,
@@ -31,13 +31,27 @@ export default function Page() {
   const [compiling, setCompiling] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Bumped whenever the user starts over. A compile can run for minutes, and
-  // "Back" is reachable the whole time, so a request can outlive the intent
-  // behind it. Without this the abandoned response still called setStep and
-  // yanked the user into a dossier built from witnesses they had since
-  // changed — and the stale `compiling` flag left the button permanently
-  // disabled and labelled "Compiling the file…" with no way to clear it.
+  // A compile can run for minutes and every exit from the intake screen stays
+  // clickable throughout, so a request routinely outlives the intent behind
+  // it. `run` identifies the attempt the UI is still waiting for; anything
+  // else that comes back is discarded.
+  //
+  // This must be bumped by EVERY route out of a running compile, not just by
+  // starting a new case. An earlier version only covered begin(), which left
+  // the two original bugs fully intact via the Back button: `compiling` stayed
+  // true so the button read "Compiling the file…" forever, and when the stale
+  // response landed it dragged the reader into a dossier built from witnesses
+  // they had already changed.
   const run = useRef(0);
+  const inflight = useRef<AbortController | null>(null);
+
+  /** Give up on whatever compile is running and let the UI go idle. */
+  const abandon = useCallback(() => {
+    run.current += 1;
+    inflight.current?.abort();
+    inflight.current = null;
+    setCompiling(false);
+  }, []);
 
   useEffect(() => {
     // A shared link carries the entire file in the URL fragment. Fragments are
@@ -61,8 +75,7 @@ export default function Page() {
   }, []);
 
   function begin() {
-    run.current += 1;
-    setCompiling(false);
+    abandon();
     setSelected([]);
     setResponses({});
     setError(null);
@@ -76,6 +89,9 @@ export default function Page() {
   }
 
   function viewSample() {
+    // Also abandons: without it an in-flight compile lands later and swaps the
+    // specimen out from under the reader mid-sentence.
+    abandon();
     setOpen({
       dossier: SAMPLE_DOSSIER,
       providers: ["chatgpt", "claude"],
@@ -107,12 +123,21 @@ export default function Page() {
     const mine = ++run.current;
     const current = () => run.current === mine;
 
+    // fetch has no default timeout. A phone that loses connectivity mid-request
+    // — a tunnel, a wifi-to-cellular handoff — leaves the promise pending for
+    // ever, and the only escape is a reload, which throws away every statement
+    // the user pasted. Bounded to the server's own ceiling.
+    const controller = new AbortController();
+    inflight.current = controller;
+    const timeout = setTimeout(() => controller.abort(), 300_000);
+
     setCompiling(true);
     try {
       const res = await fetch("/api/synthesize", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
       const data = (await res.json()) as SynthesizeResponse;
       if (!current()) return;
@@ -135,8 +160,12 @@ export default function Page() {
       });
       setStep("dossier");
     } catch {
-      if (current()) setError("The Agency did not answer. Check your connection.");
+      if (current()) {
+        setError("The Agency did not answer. Check your connection.");
+      }
     } finally {
+      clearTimeout(timeout);
+      if (inflight.current === controller) inflight.current = null;
       if (current()) setCompiling(false);
     }
   }
@@ -152,7 +181,10 @@ export default function Page() {
           selected={selected}
           onToggle={toggle}
           onContinue={() => setStep("intake")}
-          onBack={() => setStep("landing")}
+          onBack={() => {
+            abandon();
+            setStep("landing");
+          }}
         />
       )}
 
@@ -162,7 +194,10 @@ export default function Page() {
           responses={responses}
           onChange={(id, text) => setResponses((r) => ({ ...r, [id]: text }))}
           onCompile={compile}
-          onBack={() => setStep("picker")}
+          onBack={() => {
+            abandon();
+            setStep("picker");
+          }}
           compiling={compiling}
           error={error}
         />
@@ -178,7 +213,10 @@ export default function Page() {
             isSample={open.isSample}
             fromLink={open.fromLink}
             onNewCase={begin}
-            onHome={() => setStep("landing")}
+            onHome={() => {
+              abandon();
+              setStep("landing");
+            }}
           />
         </DossierBoundary>
       )}
