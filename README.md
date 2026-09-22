@@ -62,11 +62,22 @@ The key is read only by the serverless function and never reaches the browser.
 
 ## Deploy
 
-Live at <https://whoaithinkiam.vercel.app>. Vercel builds from GitHub `main`,
-so **merging to `main` deploys**. The Vercel CLI is not part of the loop.
+Live at <https://whoaithinkiam.vercel.app>.
 
-`ANTHROPIC_API_KEY` is set in the Vercel project's production environment. To
-change it: Vercel dashboard → project → Settings → Environment Variables.
+The Vercel project is **not** connected to this GitHub repository — no
+deployment or commit status has ever been recorded against a commit here — so
+pushing to `main` does not ship. Deploys go out from a linked working copy:
+
+```bash
+vercel login
+vercel --prod
+```
+
+Connecting the repo in the Vercel dashboard (Settings → Git) would make pushes
+deploy automatically, which is worth doing.
+
+`ANTHROPIC_API_KEY` is set in the project's production environment. To change
+it: Vercel dashboard → project → Settings → Environment Variables.
 
 The single serverless function is `src/app/api/synthesize/route.ts`. It never
 logs request bodies (witness statements are personal) and forces the model to
