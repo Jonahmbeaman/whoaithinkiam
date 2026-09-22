@@ -71,6 +71,22 @@ export default function Page() {
         fromLink: true,
       });
       setStep("dossier");
+
+      // Strip the fragment once it has been read. The whole compressed file
+      // lives in that URL, so leaving it in the address bar writes a complete
+      // dossier about someone into the recipient's browser history — a copy
+      // nobody chose, sitting directly against the promise that the only copy
+      // is the one you choose to send.
+      //
+      // The cost is that a refresh loses the file, which is the same contract
+      // as every other route through this app: nothing is stored, and closing
+      // the tab ends it. Sharing onward still works, because Share rebuilds
+      // the link from the dossier already in memory.
+      window.history.replaceState(
+        null,
+        "",
+        window.location.pathname + window.location.search,
+      );
     });
   }, []);
 
