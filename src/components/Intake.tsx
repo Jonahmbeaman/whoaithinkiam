@@ -1,18 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import { getProvider } from "@/lib/providers";
+import { getProvider, promptFor } from "@/lib/providers";
 import { INTERROGATION_PROMPT } from "@/lib/prompt";
 import { Stamp, TornDivider } from "./ui";
 
 const MIN_CHARS = 120;
 
-function looksLikePrompt(text: string): boolean {
-  return (
-    text.includes("[THE LENS]") &&
-    text.includes("[BLIND SPOT]") &&
-    text.toLowerCase().includes("profiling me")
-  );
+const normalize = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();
+
+/**
+ * Catches a user pasting the prompt back instead of the reply.
+ *
+ * Matches against the opening of the prompt that provider was actually handed,
+ * rather than hardcoded section labels. The previous version looked for
+ * "profiling me" AND two bracketed labels; no prompt has ever contained that
+ * phrase, so the check could never fire and the warning was unreachable.
+ * Deriving it from the prompt means it cannot drift again — and it works for
+ * providers whose prompt is an override with different labels entirely.
+ */
+function looksLikePrompt(text: string, prompt: string): boolean {
+  const body = normalize(text);
+  if (body.length < 60) return false;
+  return body.includes(normalize(prompt).slice(0, 60));
 }
 
 export default function Intake({
@@ -40,7 +50,9 @@ export default function Intake({
 
   async function copyPrompt(id: string) {
     try {
-      await navigator.clipboard.writeText(INTERROGATION_PROMPT);
+      await navigator.clipboard.writeText(
+        promptFor(INTERROGATION_PROMPT, id),
+      );
       setCopiedId(id);
       setTimeout(() => setCopiedId((c) => (c === id ? null : c)), 1800);
     } catch {
@@ -75,24 +87,41 @@ export default function Intake({
             if (!p) return null;
             const val = responses[id] ?? "";
             const len = val.trim().length;
-            const warnPrompt = looksLikePrompt(val);
+            // Every provider gets the prompt tailored to it. This used to send
+            // the shared prompt verbatim, which silently discarded every
+            // per-provider note and override in providers.ts.
+            const prompt = promptFor(INTERROGATION_PROMPT, id);
+            const warnPrompt = looksLikePrompt(val, prompt);
             const tooShort = len > 0 && len < MIN_CHARS && !warnPrompt;
             const good = len >= MIN_CHARS && !warnPrompt;
-            const href = p.buildDeepLink
-              ? p.buildDeepLink(INTERROGATION_PROMPT)
-              : p.homeUrl;
+            const href = p.buildDeepLink ? p.buildDeepLink(prompt) : p.homeUrl;
 
             return (
               <div
                 key={id}
                 className="rounded-md border-2 border-dashed border-ink/30 p-4"
               >
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <span className="label text-base text-ink">{p.name}</span>
-                  {good && (
+                  {good ? (
                     <span className="stamp text-[0.65rem]">On the record</span>
+                  ) : (
+                    p.effortNote && (
+                      <span className="text-[0.66rem] italic text-olive tw">
+                        {p.effortNote}
+                      </span>
+                    )
                   )}
                 </div>
+
+                {/* Settings the user has to change before sending. Previously
+                    defined on every provider and rendered nowhere, so nobody
+                    was ever told to switch Memory on. */}
+                {p.setupHint && (
+                  <p className="mt-2 border-l-2 border-signal/60 pl-2 text-[0.72rem] leading-snug text-ink-soft tw">
+                    {p.setupHint}
+                  </p>
+                )}
 
                 <div className="mt-3 flex flex-wrap gap-2">
                   <a
