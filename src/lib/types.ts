@@ -1,5 +1,9 @@
 // Shared types for Dossier. The Dossier shape mirrors the JSON schema the
 // /api/synthesize function forces the model to return.
+//
+// Nothing here is ever persisted. A dossier exists in React state for the life
+// of the tab and inside any share link the subject chooses to send. There is no
+// stored record type, because there is no stored record.
 
 // An inferred claim with the analyst's stated certainty (0-100).
 export interface Rated {
@@ -25,12 +29,6 @@ export interface BasicInfo {
   name: RatedValue;
   birthday: RatedValue;
   sex: RatedValue;
-  // Dropped from the schema: the prompt forbade inventing biometrics, so these
-  // were always "UNKNOWN"/0 — dead weight that pushed the grammar over its
-  // size limit. Optional so dossiers compiled before the cut still parse.
-  height?: RatedValue;
-  eyeColor?: RatedValue;
-  hairColor?: RatedValue;
   nationality: RatedValue;
   location: RatedValue; // region-level only
   occupation: RatedValue;
@@ -55,57 +53,41 @@ export interface Honeytrap {
   confidence: number; // 0-100
 }
 
-export interface HazardPerson {
-  relation: string;
-  detail: string; // never a minor's identifying info
-}
-
-// Concrete NOUNS the subject actually referenced — near-certain, so unrated.
-// Never fabricated, never minors, never in the shareable export.
-export interface PrivacyHazards {
-  people: HazardPerson[];
-  pets: string[];
-  places: string[];
-  accounts: string[];
-  other: string[];
-}
-
 export interface Dossier {
   codeName: string;
-  basicInfo: BasicInfo; // 2. PROFILE
+  basicInfo: BasicInfo;
   typology: TypologyRead[];
-  patternOfLife: Rated[]; // 3. INFORMATION
-  psychWeakness: Rated[]; // 4. PSYCHOLOGICAL ASSESSMENT
-  // Dropped from the synthesis schema (never rendered, so it only burned tokens).
-  // Optional so dossiers compiled before the cut still parse.
-  privacyHazards?: PrivacyHazards;
-  misc: Rated[]; // 5. MISCELLANEOUS — now a single bullet
+  patternOfLife: Rated[];
+  psychWeakness: Rated[];
+  misc: Rated[];
   confidence: number; // overall certainty, 0-100
-  updateNote: string;
-  // --- redesign additions (optional so older payloads still parse) ---
-  astrology?: Astrology; // PERSONALITY TYPE: sun/moon/rising
+  // Optional because a dossier may legitimately lack the evidence for them, and
+  // because a share link written by an older build may not carry them.
+  astrology?: Astrology;
   activityClock?: number[]; // 24 hourly activity levels, 0-10, index 0 = midnight
-  honeytrap?: Honeytrap; // THE HONEYTRAP
+  honeytrap?: Honeytrap;
 }
 
 export interface WitnessResponse {
   provider: string;
   text: string;
-  collectedAt: string;
 }
 
-export interface CaseFile {
-  id: string;
-  date: string;
-  codeName: string;
-  providers: string[];
+/**
+ * The compiled file, held in memory only. Not a stored record — there is no id
+ * and no timestamp beyond the one printed on the sheet, because nothing indexes
+ * or retrieves it later.
+ */
+export interface OpenFile {
   dossier: Dossier;
+  providers: string[];
+  date: string;
   responses: WitnessResponse[];
+  isSample: boolean;
 }
 
 export interface SynthesizeRequest {
-  responses: Pick<WitnessResponse, "provider" | "text">[];
-  previousDossier?: { date: string; summaryJson: Dossier } | null;
+  responses: WitnessResponse[];
 }
 
 export type ApiResult<T> = ({ ok: true } & T) | { ok: false; error: string };
