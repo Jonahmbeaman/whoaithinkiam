@@ -9,10 +9,21 @@ import ShareSheet from "./ShareSheet";
 // Donate button is hidden until there's a real link to point at. Restore the
 // <a> in the nav row alongside the other navBtn buttons when you have one.
 
-// The dossier is a fixed US-Letter sheet (8.5×11 in @ 96dpi). It never scrolls;
-// it scales to fit the viewport.
+// The dossier is a US-Letter sheet (8.5×11 in @ 96dpi). It never scrolls; it
+// scales to fit the viewport.
+//
+// PAGE_H is a floor, not a ceiling. It used to be a hard height with the
+// content clipped by overflow-hidden, which meant a wordy dossier lost its
+// footer and the tail of the Psychological Assessment with no warning — the
+// page looked like the toolbar was covering it. The sheet now grows past
+// PAGE_H when the analyst writes long, and the fit scale absorbs the extra
+// height instead. Short dossiers still render at exactly Letter proportions.
 const PAGE_W = 816;
 const PAGE_H = 1056;
+
+// Black margin kept clear on every side of the sheet, so the page never sits
+// flush against the toolbar or the window edge.
+const STAGE_GUTTER = 20;
 
 const dash = (v?: string) =>
   v && v.trim() && v.trim().toUpperCase() !== "UNKNOWN" ? v : "—";
@@ -135,20 +146,29 @@ export default function DossierView({
   const [tipOpen, setTipOpen] = useState(false);
   const [statementsOpen, setStatementsOpen] = useState(false);
 
-  // Scale the fixed Letter sheet to fit the viewport (never upscale past 1:1).
+  // Scale the sheet to fit the stage (never upscale past 1:1).
   const stageRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   useEffect(() => {
-    const el = stageRef.current;
-    if (!el) return;
+    const stage = stageRef.current;
+    const sheet = sheetRef.current;
+    if (!stage || !sheet) return;
     const compute = () => {
-      const w = el.clientWidth;
-      const h = el.clientHeight;
-      setScale(Math.min(1, Math.min((w - 12) / PAGE_W, (h - 12) / PAGE_H)));
+      // offsetHeight is the sheet's laid-out height and is unaffected by its
+      // own transform, so reading it here cannot feed back into the scale.
+      const pageH = Math.max(PAGE_H, sheet.offsetHeight);
+      const availW = stage.clientWidth - STAGE_GUTTER * 2;
+      const availH = stage.clientHeight - STAGE_GUTTER * 2;
+      setScale(Math.min(1, availW / PAGE_W, availH / pageH));
     };
     compute();
     const ro = new ResizeObserver(compute);
-    ro.observe(el);
+    ro.observe(stage);
+    // The sheet is observed too: a long dossier, or a webfont landing late and
+    // re-wrapping the body copy, changes the page height after first paint.
+    ro.observe(sheet);
+    void document.fonts?.ready.then(compute);
     return () => ro.disconnect();
   }, []);
 
@@ -197,14 +217,18 @@ export default function DossierView({
   const navBtn = "rounded-sm border border-paper/40 px-3 py-1.5 label text-[0.68rem] text-paper/90 transition hover:bg-paper hover:text-ink";
 
   return (
-    <div className="fixed inset-0 z-40 flex flex-col overflow-hidden bg-ink">
+    // h-dvh rather than inset-0: on iOS Safari a fixed inset-0 box resolves
+    // against the large viewport, so the toolbar ends up behind the browser's
+    // own bottom bar and the sheet is sized to space the reader cannot see.
+    <div className="fixed inset-x-0 top-0 z-40 flex h-dvh flex-col overflow-hidden bg-ink">
       {/* Letter stage — scales the fixed sheet to fit, no scrolling */}
       <div ref={stageRef} className="relative flex flex-1 items-center justify-center overflow-hidden">
         <div
-          className="paper relative shrink-0 overflow-hidden shadow-[0_30px_80px_-20px_rgba(0,0,0,0.9)]"
-          style={{ width: PAGE_W, height: PAGE_H, transform: `scale(${scale})`, transformOrigin: "center center" }}
+          ref={sheetRef}
+          className="paper relative flex shrink-0 flex-col overflow-hidden shadow-[0_30px_80px_-20px_rgba(0,0,0,0.9)]"
+          style={{ width: PAGE_W, minHeight: PAGE_H, transform: `scale(${scale})`, transformOrigin: "center center" }}
         >
-          <div className="flex h-full flex-col px-10 py-8">
+          <div className="flex flex-1 flex-col px-10 py-8">
             <div className="pointer-events-none absolute right-10 top-32 rotate-[8deg] opacity-70">
               <Stamp className="text-[0.7rem]">Confidential</Stamp>
             </div>
