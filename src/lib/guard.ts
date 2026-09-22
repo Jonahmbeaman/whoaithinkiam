@@ -132,7 +132,7 @@ export function oversized(
     if (typeof s?.text === "string") total += s.text.length;
   }
   if (total > MAX_TOTAL_CHARS) {
-    return { reason: "That's more paperwork than we can process. Trim it down." };
+    return { reason: "That is more paperwork than this office will read. Trim it down." };
   }
   return null;
 }

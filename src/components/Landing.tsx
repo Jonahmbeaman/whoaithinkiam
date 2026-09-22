@@ -5,13 +5,9 @@ import { Stamp, TornDivider } from "./ui";
 export default function Landing({
   onBegin,
   onViewSample,
-  onOpenHistory,
-  historyCount,
 }: {
   onBegin: () => void;
   onViewSample: () => void;
-  onOpenHistory: () => void;
-  historyCount: number;
 }) {
   return (
     <div className="rise mx-auto w-full max-w-xl px-5 py-10">
@@ -27,7 +23,7 @@ export default function Landing({
             <span className="label text-[0.6rem] text-teal">
               Classified // Eyes Only
             </span>
-            <Stamp className="text-xs">Top Secret</Stamp>
+            <Stamp className="text-xs">Classified</Stamp>
           </div>
 
           <h1 className="text-center text-5xl tracking-[0.12em] text-ink [font-family:var(--font-stamp)] font-bold sm:text-6xl">
@@ -42,12 +38,12 @@ export default function Landing({
           <p className="text-center text-[0.96rem] leading-relaxed text-ink-soft tw">
             Every AI you talk to has quietly built a theory of who you are — how
             you think, what drives you, the thing you can&rsquo;t see about
-            yourself. The Agency interrogates them all and compiles one operative
-            profile on you.
+            yourself. The Agency interrogates them all and compiles one
+            operative profile on you.
           </p>
 
           <p className="mt-4 text-center label text-[0.64rem] text-olive">
-            ~30 seconds per source · psychological read · shareable file
+            It will not flatter you. That is the point.
           </p>
 
           <button
@@ -57,26 +53,25 @@ export default function Landing({
             Open your file
           </button>
 
-          <div className="mt-4 flex items-center justify-center gap-6 text-[0.72rem]">
+          <div className="mt-4 flex items-center justify-center text-[0.72rem]">
             <button
               onClick={onViewSample}
               className="label text-teal underline decoration-dotted underline-offset-4 hover:text-ink"
             >
               See a specimen
             </button>
-            <button
-              onClick={onOpenHistory}
-              className="label text-teal underline decoration-dotted underline-offset-4 hover:text-ink"
-            >
-              Case history{historyCount > 0 ? ` (${historyCount})` : ""}
-            </button>
           </div>
         </div>
       </div>
 
+      {/* The one canonical privacy statement. It is repeated verbatim wherever
+          the subject needs it, and it is precise rather than absolute: the
+          ten-minute clause is real and is the reason this can be stated at all. */}
       <p className="mt-6 px-2 text-center text-[0.72rem] leading-relaxed text-paper/50 tw">
-        We never ask for your AI passwords. You paste each AI&rsquo;s reply
-        yourself. Your files are saved only in this browser.
+        No account, no cookies, no database. We never ask for an AI password —
+        you paste each reply yourself. Your statements pass through once and are
+        never written down. Your address is held for ten minutes to stop abuse,
+        then dropped. The only copy is the one you choose to send.
       </p>
     </div>
   );

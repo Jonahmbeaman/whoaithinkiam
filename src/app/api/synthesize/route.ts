@@ -20,7 +20,7 @@ export const runtime = "nodejs";
 // compile measured 30-35s, so 60 left almost no headroom: six witnesses, a
 // slow upstream, or a retry would have been cut off mid-report. 240 is a
 // ceiling for runaway calls, not a target.
-export const maxDuration = 240;
+export const maxDuration = 300;
 
 const MODEL = process.env.DOSSIER_MODEL || "claude-opus-5";
 const MIN_STATEMENT_CHARS = 120;
@@ -82,9 +82,12 @@ grounded, never cruel, never flattering.
 5. MISCELLANEOUS — misc: EXACTLY 1 rated bullet {claim, confidence} — the single
 most telling thing that doesn't fit above.
 
-activityClock — array of EXACTLY 24 integers 0-10, one per hour (index 0 = midnight,
-23 = 11pm), estimating how active the subject is each hour from their described
-habits. Peak where they say they work/post; near 0 while they sleep.
+activityClock — OPTIONAL. Only produce this when the statements contain real
+timing evidence (stated hours, "late at night", timestamps). Then return EXACTLY
+24 integers 0-10, one per hour (index 0 = midnight, 23 = 11pm). If the
+statements say nothing about when the subject is active, return [] — it renders
+as a dial, and a dial reads as measurement. Never interpolate a daily rhythm
+from a single sentence.
 
 honeytrap — {codename, appearance, method, why, confidence}. Invent the person MOST
 likely to win this subject over: a plausible fake individual — codename in CAPS, a
@@ -93,10 +96,7 @@ about the subject's own blind spots — NEVER a real, named third party.
 
 confidence — overall 0-100 integer: how well the statements collectively pin the subject.
 
-codeName — a wry 2-4 word ALL CAPS file designation naming a real pattern.
-
-updateNote — if a PREVIOUS DOSSIER is provided, 2-3 short sentences on what
-changed. Otherwise an empty string.`;
+codeName — a wry 2-4 word ALL CAPS file designation naming a real pattern.`;
 
 const rated = {
   type: "object",
@@ -169,7 +169,6 @@ const DOSSIER_SCHEMA = {
     psychWeakness: ratedArr,
     misc: ratedArr,
     confidence: { type: "integer" },
-    updateNote: { type: "string" },
     astrology: {
       type: "object",
       additionalProperties: false,
@@ -205,9 +204,7 @@ const DOSSIER_SCHEMA = {
     "psychWeakness",
     "misc",
     "confidence",
-    "updateNote",
     "astrology",
-    "activityClock",
     "honeytrap",
   ],
 } as const;
@@ -287,7 +284,7 @@ export async function POST(
   }
 
   if (!process.env.ANTHROPIC_API_KEY) {
-    return err("No API key configured.", 500, cors);
+    return err("The Agency is not accepting filings right now.", 500, cors);
   }
 
   const witnessBlock = usable
@@ -297,13 +294,7 @@ export async function POST(
     )
     .join("\n\n----------\n\n");
 
-  const priorBlock = body.previousDossier
-    ? `\n\nPREVIOUS DOSSIER (last compiled ${body.previousDossier.date}):\n${JSON.stringify(
-        body.previousDossier.summaryJson,
-      )}`
-    : "";
-
-  const userContent = `Compile the dossier from these field statements.\n\n${witnessBlock}${priorBlock}`;
+  const userContent = `Compile the dossier from these field statements.\n\n${witnessBlock}`;
 
   const client = new Anthropic();
 
@@ -320,13 +311,12 @@ export async function POST(
         {
           type: "text",
           text: SYSTEM_PROMPT,
-          cache_control: { type: "ephemeral" },
+          cache_control: { type: "ephemeral", ttl: "1h" },
         },
       ],
       messages: [{ role: "user", content: userContent }],
       thinking: { type: "adaptive" },
       output_config: {
-        effort: "high",
         format: { type: "json_schema", schema: DOSSIER_SCHEMA },
       },
     });
@@ -355,9 +345,18 @@ export async function POST(
     const dossier = JSON.parse(jsonText) as Dossier;
     return NextResponse.json({ ok: true, dossier }, { headers: cors });
   } catch (e) {
-    console.error("synthesize failed:", e instanceof Error ? e.message : e);
+    // Name and status only. An SDK error message can embed the upstream
+    // error body, which can quote the offending request — and witness
+    // statements are the rawest material in the app. Nothing about a subject
+    // reaches a log line.
+    const name = e instanceof Error ? e.name : "unknown";
+    const status =
+      typeof e === "object" && e !== null && "status" in e
+        ? String((e as { status: unknown }).status)
+        : "-";
+    console.error(`synthesize failed: ${name} status=${status}`);
     return err(
-      "Compilation failed mid-report. Your statements are safe — try again.",
+      "The report failed mid-compilation. Nothing was kept. File it again.",
       502,
       cors,
     );
@@ -365,5 +364,5 @@ export async function POST(
 }
 
 export function GET(): NextResponse<SynthesizeResponse> {
-  return err("Use POST with witness statements.", 405);
+  return err("This office takes filings, not enquiries.", 405);
 }

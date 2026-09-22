@@ -2,7 +2,7 @@ import type { Dossier } from "./types";
 
 // Hand-drawn share cards on <canvas> for crispness. Styled as a mini operative
 // ID card: orange classification bar, code name, ID field cells, silhouette,
-// one killer psychological line, TOP SECRET stamp. Device fonts (Arial Narrow /
+// one killer psychological line, CLASSIFIED stamp. Device fonts (Arial Narrow /
 // Courier New / Georgia) so it renders identically on iOS Safari and Android.
 
 export type ShareFormat = "9:16" | "1:1";
@@ -32,6 +32,15 @@ export function defaultExcerpt(d: Dossier): string {
     d.misc?.[0]?.claim?.trim() ||
     ""
   );
+}
+
+/**
+ * The host this build is actually served from. Previously a hardcoded
+ * "dossier.app", which is not a domain this project owns — every shared image
+ * advertised somewhere else.
+ */
+function shareHost(): string {
+  return typeof window !== "undefined" ? window.location.host : "";
 }
 
 function wrapText(
@@ -242,7 +251,7 @@ export function renderShareCard(
   ctx.fillStyle = "#17130d";
   ctx.textAlign = "left";
   ctx.font = "700 30px 'Arial Narrow','Helvetica Neue',sans-serif";
-  drawSpaced(ctx, "TOP SECRET · THE AGENCY", M, 51, 4);
+  drawSpaced(ctx, "CLASSIFIED · THE AGENCY", M, 51, 4);
   ctx.textAlign = "right";
   ctx.font = "700 22px 'Arial Narrow','Helvetica Neue',sans-serif";
   ctx.fillText("DO NOT COPY", w - M, 49);
@@ -258,7 +267,7 @@ export function renderShareCard(
   ctx.textAlign = "left";
   ctx.fillStyle = C.ink;
   ctx.font = "700 34px 'Arial Narrow','Helvetica Neue',sans-serif";
-  drawSpaced(ctx, "OPERATIVE PROFILE", M, y, 5);
+  drawSpaced(ctx, "DOSSIER — SUBJECT PROFILE", M, y, 5);
   y += 20;
   ctx.strokeStyle = C.teal;
   ctx.lineWidth = 3;
@@ -330,7 +339,7 @@ export function renderShareCard(
   // Psychological read excerpt
   ctx.fillStyle = C.teal;
   ctx.font = "700 24px 'Arial Narrow','Helvetica Neue',sans-serif";
-  drawSpaced(ctx, "— PSYCHOLOGICAL READ —", M, y, 4);
+  drawSpaced(ctx, "— PSYCHOLOGICAL ASSESSMENT —", M, y, 4);
   y += 44;
 
   ctx.fillStyle = C.ink;
@@ -355,10 +364,10 @@ export function renderShareCard(
   ctx.textAlign = "center";
   ctx.fillStyle = C.inkSoft;
   ctx.font = "28px 'Courier New',monospace";
-  ctx.fillText("dossier.app", w / 2, h - 132);
+  ctx.fillText(shareHost(), w / 2, h - 132);
   ctx.fillStyle = C.olive;
   ctx.font = "22px 'Courier New',monospace";
-  ctx.fillText("find out what AI thinks of you", w / 2, h - 98);
+  ctx.fillText("the file AI has been keeping on you", w / 2, h - 98);
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(
@@ -400,8 +409,8 @@ export async function shareOrDownload(
     try {
       await navigator.share({
         files: [file],
-        title: "My Dossier",
-        text: `"${codeName}" — find out what AI thinks of you. dossier.app`,
+        title: "Dossier",
+        text: `"${codeName}" — the file AI has been keeping on you. ${shareHost()}`,
       });
       return "shared";
     } catch (e) {

@@ -69,7 +69,7 @@ export const PROVIDERS: Provider[] = [
   {
     id: "perplexity",
     name: "Perplexity",
-    tagline: "Keeps receipts on what you ask.",
+    tagline: "Logs every question. Remembers none of the answers.",
     effortNote: "~30 seconds · short reply",
     buildDeepLink: (p) =>
       `https://www.perplexity.ai/search?q=${encodeURIComponent(p)}`,

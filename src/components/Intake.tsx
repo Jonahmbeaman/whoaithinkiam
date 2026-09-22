@@ -159,7 +159,7 @@ export default function Intake({
                   )}
                   {tooShort && (
                     <span className="text-olive">
-                      A little thin — paste the full statement ({MIN_CHARS}+
+                      Too thin to file. Paste the whole reply ({MIN_CHARS}+
                       characters).
                     </span>
                   )}

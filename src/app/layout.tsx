@@ -26,7 +26,7 @@ const oswald = Oswald({
   display: "swap",
 });
 
-const TITLE = "DOSSIER — find out what AI thinks of you";
+const TITLE = "DOSSIER — the file AI has been keeping on you";
 const DESCRIPTION =
   "Every AI you talk to has quietly built a theory of who you are. Dossier interrogates them all and compiles one confidential case file on you.";
 

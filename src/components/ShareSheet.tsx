@@ -63,7 +63,7 @@ export default function ShareSheet({
       const blob = await renderShareCard(dossier, format, excerpt);
       const result = await shareOrDownload(blob, dossier.codeName);
       if (result === "downloaded") setStatus("Saved to your device.");
-      else if (result === "failed") setStatus("Share failed — try again.");
+      else if (result === "failed") setStatus("The handoff failed.");
       else setStatus("");
     } finally {
       setBusy(false);
@@ -177,8 +177,8 @@ export default function ShareSheet({
           Copy live link
         </button>
         <p className="mt-2 text-center text-[0.62rem] text-olive tw">
-          The image opens your share sheet. The link holds the whole file inside
-          the URL — we store nothing.
+          The link holds the whole file inside the URL itself. Nothing was
+          uploaded, and nothing was stored.
         </p>
       </div>
     </div>

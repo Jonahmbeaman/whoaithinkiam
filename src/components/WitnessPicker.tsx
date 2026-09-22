@@ -27,10 +27,10 @@ export default function WitnessPicker({
           <Stamp className="text-xs">Step 1 / 2</Stamp>
         </div>
 
-        <h2 className="mt-3 label text-xl text-ink">Select your sources</h2>
+        <h2 className="mt-3 label text-xl text-ink">Name your witnesses</h2>
         <p className="mt-2 text-[0.9rem] leading-relaxed text-ink-soft tw">
-          Which AIs have you actually talked to? Pick every one you use — more
-          sources, sharper file.
+          Which of these have you actually talked to? Each one is interrogated
+          separately, and each one knows a different part of you.
         </p>
 
         <TornDivider className="my-5" />
@@ -77,8 +77,8 @@ export default function WitnessPicker({
           className="mt-6 w-full rounded-md bg-signal py-4 label text-sm text-ink transition enabled:hover:brightness-105 enabled:active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
         >
           {selected.length === 0
-            ? "Select at least one source"
-            : `Interrogate ${selected.length} source${selected.length > 1 ? "s" : ""}`}
+            ? "Name at least one witness"
+            : `Interrogate ${selected.length} witness${selected.length > 1 ? "es" : ""}`}
         </button>
       </div>
     </div>

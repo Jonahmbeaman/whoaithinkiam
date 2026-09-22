@@ -1,62 +1,88 @@
 import type { Dossier } from "./types";
 
-// Hardcoded specimen for design iteration and the landing-page preview.
+// The specimen behind "See a specimen" — the first dossier most visitors read,
+// and the only compile-time enforcement of the `Dossier` shape in the codebase.
+// Keep it full enough to exercise all three sheets and the mobile layout.
+//
+// The subject is invented. It used to be the owner's real name, location and
+// occupation, which meant every stranger who clicked through read a
+// psychological profile of him.
+//
+// Voice check applied to every line here: no praise adjectives, no "you're the
+// kind of person who", and no flaw-as-strength reframes. The earlier version
+// shipped two — "respects the craft, never flatters" and "He distrusts praise,
+// not competence" — which are compliments wearing an analyst's voice. The test
+// is: rewrite the claim as what the subject DOES, with no evaluative word. If
+// the rewrite loses the point, the point was the compliment.
 export const SAMPLE_DOSSIER: Dossier = {
-  codeName: "PRIVATE UNTIL PERFECT",
+  codeName: "RIGHT WHEN IT BREAKS",
   basicInfo: {
-    name: { value: "Jonah", confidence: 90 },
-    birthday: { value: "Est. b. 2003 (early 20s)", confidence: 62 },
-    sex: { value: "Male", confidence: 80 },
-    nationality: { value: "United States", confidence: 78 },
-    location: { value: "Texas (Central US)", confidence: 66 },
-    occupation: { value: "Software engineer, pre-first-job", confidence: 84 },
-    education: { value: "Self-taught + coding cohort", confidence: 71 },
-    languages: { value: "English", confidence: 88 },
-    relationshipStatus: { value: "Single (inferred)", confidence: 44 },
+    name: { value: "Devin", confidence: 88 },
+    birthday: { value: "Est. b. 1996 (late 20s)", confidence: 41 },
+    sex: { value: "Male", confidence: 70 },
+    nationality: { value: "United States", confidence: 80 },
+    location: { value: "Puget Sound, Washington", confidence: 84 },
+    occupation: { value: "Backend engineer, logistics", confidence: 90 },
+    education: { value: "Community college, then a bootcamp", confidence: 85 },
+    languages: { value: "English", confidence: 86 },
+    relationshipStatus: { value: "Unstated", confidence: 22 },
   },
   astrology: {
-    sun: { value: "Virgo", confidence: 41 },
-    moon: { value: "Scorpio", confidence: 30 },
-    rising: { value: "Capricorn", confidence: 26 },
+    sun: { value: "Virgo", confidence: 38 },
+    moon: { value: "Capricorn", confidence: 24 },
+    rising: { value: "Scorpio", confidence: 21 },
   },
-  activityClock: [9, 8, 7, 4, 2, 1, 1, 2, 2, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 7, 8, 9, 10, 10],
+  activityClock: [7, 9, 8, 5, 2, 1, 1, 1, 2, 3, 4, 4, 5, 5, 5, 6, 6, 6, 5, 5, 6, 7, 9, 10],
   honeytrap: {
-    codename: "MARA",
-    appearance: "Female, early 20s. Dark hair, low-key style, resting focus.",
-    method: "Shares his hours and his obsessions; respects the craft, never flatters.",
-    why: "He distrusts praise, not competence.",
-    confidence: 64,
+    codename: "POSTMORTEM",
+    appearance: "Early thirties. Staff-level SRE. Chalk on her jacket, unimpressed by titles.",
+    method:
+      "Meets him at the climbing gym on a Tuesday, asks about the queue migration, and offers to co-write the incident doc so he never has to present it.",
+    why: "He wants to be told he was right more than he wants to be liked, and he will only count it from someone senior enough to matter.",
+    confidence: 66,
   },
   typology: [
-    { system: "16 Personalities", value: "INTJ", take: "Would rather be right alone than fast with help.", confidence: 68 },
-    { system: "Archetype", value: "The Apprentice", take: "Always training for the real thing, never calling it arrived.", confidence: 74 },
-    { system: "Zodiac (est.)", value: "Virgo", take: "Perfectionism aimed inward, so nothing is ever done.", confidence: 41 },
+    {
+      system: "16 Personalities",
+      value: "INTP",
+      take: "Maps the whole system rather than close the ticket in front of him.",
+      confidence: 71,
+    },
+    {
+      system: "Archetype",
+      value: "The Sentinel",
+      take: "Positions himself where the failure will happen and waits to be needed.",
+      confidence: 68,
+    },
+    {
+      system: "Zodiac (est.)",
+      value: "Virgo",
+      take: "Corrects small things to avoid starting large ones.",
+      confidence: 38,
+    },
   ],
   patternOfLife: [
-    { claim: "Most active late at night; works in bursts, then goes quiet.", confidence: 82 },
-    { claim: "Works from home and through a cohort program.", confidence: 70 },
-    { claim: "Searches for dev tools and game engines, not places.", confidence: 76 },
-    { claim: "Treats small tasks as rehearsals for a bigger one coming.", confidence: 64 },
+    { claim: "Messages almost exclusively between 10pm and 2am; goes silent for days, then arrives with a fully-formed argument.", confidence: 84 },
+    { claim: "On an on-call rotation at a logistics company. Owns a warehouse routing service and talks about it as work, never as an exit.", confidence: 88 },
+    { claim: "Ferry schedules and terminal names recur — an island-side commute, not an occasional crossing.", confidence: 80 },
+    { claim: "Climbs Tuesdays. Working V5 problems with a shoulder injury he keeps reading about instead of treating.", confidence: 82 },
+    { claim: "Supports a sibling financially. Mentions it once, flatly, and never returns to it.", confidence: 74 },
+    { claim: "Bribe surface: keyboard switches, gravel tyres, a standing desk — all priced, all cheap, none bought.", confidence: 79 },
+    { claim: "Lever: treat him as senior and name the bootcamp route as irrelevant before he does. He opens up inside one exchange.", confidence: 76 },
+    { claim: "Reads promotion criteria repeatedly and has attached a two-year deadline to it out loud.", confidence: 85 },
   ],
   psychWeakness: [
-    { claim: "Asks for the correct terminology instead of the answer — needs to feel he earned it.", confidence: 79 },
-    { claim: "Frames questions defensively, bracing to be told he's behind.", confidence: 72 },
-    { claim: "Over-prepares under uncertainty; equates unfinished with exposed.", confidence: 81 },
-    { claim: "Attachment to a personal game project reads as a world he can perfect alone.", confidence: 58 },
-    { claim: "Rarely mentions people; the AI is doing some of a confidant's work.", confidence: 63 },
+    { claim: "Pre-apologises for questions. Asking cost him something somewhere.", confidence: 78 },
+    { claim: "Raises the community-college route unprompted, then argues against it. Status anxiety, not doubt about his own work.", confidence: 83 },
+    { claim: "Reads silence as disagreement and answers arguments nobody made.", confidence: 64 },
+    { claim: "States his drive as wanting to be right when it breaks. That is waiting for a disaster to arrive and settle a score.", confidence: 81 },
+    { claim: "Rewrites the document rather than present it. Avoids any room where he cannot revise.", confidence: 80 },
+    { claim: "Researches how long the injury takes to heal instead of seeing anyone. Treats his body as a system he can debug by reading.", confidence: 72 },
+    { claim: "Builds the failure case before the happy path, then calls the delay rigour.", confidence: 77 },
+    { claim: "Almost never mentions a person he is not in conflict with.", confidence: 61 },
   ],
-  privacyHazards: {
-    people: [{ relation: "Cohort", detail: "A coding program he checks in with" }],
-    pets: [],
-    places: ["Texas"],
-    accounts: ["GitHub (referenced)", "Godot forums (referenced)"],
-    other: ["A Greek-myth game project he's attached to"],
-  },
   misc: [
-    { claim: "Comfortable at the command line; reaching for senior git habits.", confidence: 77 },
-    { claim: "Deadlines cluster around summer.", confidence: 60 },
+    { claim: "Has a side business with paying users and describes it in the same register as his day job. The exit exists and he has not noticed it.", confidence: 58 },
   ],
-  confidence: 71,
-  updateNote: "",
+  confidence: 76,
 };
-
