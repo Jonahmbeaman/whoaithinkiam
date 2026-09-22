@@ -37,22 +37,24 @@ function supported(): boolean {
   );
 }
 
-async function gzip(text: string): Promise<Uint8Array<ArrayBuffer>> {
-  const cs = new CompressionStream("gzip");
-  const writer = cs.writable.getWriter();
-  await writer.write(new TextEncoder().encode(text));
-  await writer.close();
-  const buf = await new Response(cs.readable).arrayBuffer();
-  return new Uint8Array(buf);
+// Both of these pipe through a Blob stream rather than driving the writer by
+// hand. The hand-rolled version awaited writer.write() and writer.close()
+// BEFORE anything consumed the readable end, which deadlocks on backpressure:
+// once the payload exceeds the transform's internal queue, the write promise
+// can only settle after a reader drains it, and the only reader ran after the
+// await. Small dossiers fit in the queue and worked; realistic ones hung
+// forever, which silently broke both copy-a-link and open-a-link — the entire
+// sharing path — with no error anywhere.
+async function gzip(text: string): Promise<Uint8Array> {
+  const source = new Blob([new TextEncoder().encode(text)]).stream();
+  const compressed = source.pipeThrough(new CompressionStream("gzip"));
+  return new Uint8Array(await new Response(compressed).arrayBuffer());
 }
 
-async function gunzip(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
-  const ds = new DecompressionStream("gzip");
-  const writer = ds.writable.getWriter();
-  await writer.write(bytes);
-  await writer.close();
-  const buf = await new Response(ds.readable).arrayBuffer();
-  return new TextDecoder().decode(buf);
+async function gunzip(bytes: Uint8Array): Promise<string> {
+  const source = new Blob([bytes as BlobPart]).stream();
+  const expanded = source.pipeThrough(new DecompressionStream("gzip"));
+  return new Response(expanded).text();
 }
 
 function toBase64Url(bytes: Uint8Array): string {
@@ -61,7 +63,7 @@ function toBase64Url(bytes: Uint8Array): string {
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-function fromBase64Url(s: string): Uint8Array<ArrayBuffer> {
+function fromBase64Url(s: string): Uint8Array {
   const bin = atob(s.replace(/-/g, "+").replace(/_/g, "/"));
   const out = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
