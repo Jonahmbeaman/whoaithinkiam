@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   OpenFile,
   SynthesizeRequest,
@@ -31,6 +31,14 @@ export default function Page() {
   const [compiling, setCompiling] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Bumped whenever the user starts over. A compile can run for minutes, and
+  // "Back" is reachable the whole time, so a request can outlive the intent
+  // behind it. Without this the abandoned response still called setStep and
+  // yanked the user into a dossier built from witnesses they had since
+  // changed — and the stale `compiling` flag left the button permanently
+  // disabled and labelled "Compiling the file…" with no way to clear it.
+  const run = useRef(0);
+
   useEffect(() => {
     // A shared link carries the entire file in the URL fragment. Fragments are
     // never sent to a server, so this is read entirely in the recipient's tab.
@@ -42,16 +50,19 @@ export default function Page() {
       if (!dossier) return;
       setOpen({
         dossier,
-        providers: shared.providers,
-        date: shared.date,
+        providers: Array.isArray(shared.providers) ? shared.providers : [],
+        date: typeof shared.date === "string" ? shared.date : "",
         responses: [],
         isSample: false,
+        fromLink: true,
       });
       setStep("dossier");
     });
   }, []);
 
   function begin() {
+    run.current += 1;
+    setCompiling(false);
     setSelected([]);
     setResponses({});
     setError(null);
@@ -71,6 +82,7 @@ export default function Page() {
       date: new Date().toISOString(),
       responses: [],
       isSample: true,
+      fromLink: false,
     });
     setStep("dossier");
   }
@@ -92,6 +104,9 @@ export default function Page() {
 
     const payload: SynthesizeRequest = { responses: collected };
 
+    const mine = ++run.current;
+    const current = () => run.current === mine;
+
     setCompiling(true);
     try {
       const res = await fetch("/api/synthesize", {
@@ -100,6 +115,7 @@ export default function Page() {
         body: JSON.stringify(payload),
       });
       const data = (await res.json()) as SynthesizeResponse;
+      if (!current()) return;
       if (!data.ok) {
         setError(data.error);
         return;
@@ -115,12 +131,13 @@ export default function Page() {
         date: new Date().toISOString(),
         responses: collected,
         isSample: false,
+        fromLink: false,
       });
       setStep("dossier");
     } catch {
-      setError("The Agency did not answer. Check your connection.");
+      if (current()) setError("The Agency did not answer. Check your connection.");
     } finally {
-      setCompiling(false);
+      if (current()) setCompiling(false);
     }
   }
 
@@ -159,6 +176,7 @@ export default function Page() {
             date={open.date}
             responses={open.responses}
             isSample={open.isSample}
+            fromLink={open.fromLink}
             onNewCase={begin}
             onHome={() => setStep("landing")}
           />

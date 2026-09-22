@@ -174,7 +174,7 @@ function drawCell(
   ctx.fillStyle = C.ink;
   ctx.font = "28px 'Courier New',monospace";
   const val =
-    value.trim().toUpperCase() === "REDACTED" ? "░░░░" : value;
+    value.trim() && value.trim().toUpperCase() !== "UNKNOWN" ? value : "—";
   // Truncate to fit
   let v = val;
   while (ctx.measureText(v).width > w - 28 && v.length > 4) {

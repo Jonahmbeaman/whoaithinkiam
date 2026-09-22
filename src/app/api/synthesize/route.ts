@@ -17,9 +17,9 @@ import type {
 
 export const runtime = "nodejs";
 // Fluid compute allows 300s on every plan including Hobby. A two-witness
-// compile measured 30-35s, so 60 left almost no headroom: six witnesses, a
-// slow upstream, or a retry would have been cut off mid-report. 240 is a
-// ceiling for runaway calls, not a target.
+// compile measured 30-35s, so the old 60 left almost no headroom: six
+// witnesses, a slow upstream, or a retry would have been cut off mid-report.
+// This is a ceiling for runaway calls, not a target.
 export const maxDuration = 300;
 
 const MODEL = process.env.DOSSIER_MODEL || "claude-opus-5";
@@ -56,7 +56,7 @@ Confidence discipline: confidence is a 0-100 integer reflecting how strongly the
 statements support the claim. Referenced facts are high; reaches are low. Do not
 inflate. An 8% claim is allowed and honest.
 
-2. PROFILE — basicInfo. Each field is {value, confidence}. DMV/passport facts,
+1. PROFILE — basicInfo. Each field is {value, confidence}. DMV/passport facts,
 flat values or best guesses, NO jokes:
 - name, birthday (DOB, else "Est. b. <year>"), sex, nationality, location
   (region-level only — never a precise address), occupation, education, languages,
@@ -69,17 +69,17 @@ non-flattering line.
 astrology — {sun, moon, rising}, each {value, confidence}. Best-guess signs from
 the subject's vibe; keep confidence low (these are reaches, not facts).
 
-3. INFORMATION — patternOfLife: 4-8 rated bullets {claim, confidence}: the most
+2. INFORMATION — patternOfLife: 4-8 rated bullets {claim, confidence}: the most
 personal facts on file — where they live/work, family, interests, the ways to win
 them over (bribe / manipulation levers), and how dangerous they seem. Numbered.
 
-4. PSYCHOLOGICAL ASSESSMENT — psychWeakness: 4-8 rated bullets {claim, confidence}.
+3. PSYCHOLOGICAL ASSESSMENT — psychWeakness: 4-8 rated bullets {claim, confidence}.
 Over-analyze the subject's speech and prompt patterns into inferences about their
 emotional life, parental dynamics, and romantic/loved-one situation. Include
 attachments to favorite shows, characters, or media as emotional tells. Sharp,
 grounded, never cruel, never flattering.
 
-5. MISCELLANEOUS — misc: EXACTLY 1 rated bullet {claim, confidence} — the single
+4. MISCELLANEOUS — misc: EXACTLY 1 rated bullet {claim, confidence} — the single
 most telling thing that doesn't fit above.
 
 activityClock — OPTIONAL. Only produce this when the statements contain real
@@ -262,7 +262,11 @@ export async function POST(
     return err("The paperwork is unreadable. Try again.", 400, cors);
   }
 
-  const incoming = body.responses ?? [];
+  // Anything past this point assumes an array. A hand-crafted body with
+  // `responses` as a string, object or null used to throw before the try block
+  // below, producing a bare 500 with no CORS headers and no {ok:false} envelope
+  // — so the client's res.json() threw too and reported a network failure.
+  const incoming = Array.isArray(body?.responses) ? body.responses : [];
   const tooBig = oversized(incoming);
   if (tooBig) {
     return err(tooBig.reason, 413, cors);

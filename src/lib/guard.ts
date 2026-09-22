@@ -96,11 +96,13 @@ export function rateLimit(key: string): {
   const cutoff = now - RATE_LIMIT_WINDOW_MS;
   const recent = (hits.get(key) ?? []).filter((t) => t > cutoff);
 
-  // Keep the map from growing without bound across a long-lived instance.
-  if (hits.size > 5_000) {
-    for (const [k, times] of hits) {
-      if (times.every((t) => t <= cutoff)) hits.delete(k);
-    }
+  // Unconditional sweep, not one gated on map size. The public privacy
+  // statement says an address is held for ten minutes and then dropped, and
+  // that has to be literally true: pruning only on the next request from the
+  // same key meant a caller who never returned stayed in the map for the life
+  // of the instance. The map is small and this runs once per request.
+  for (const [k, times] of hits) {
+    if (times.every((t) => t <= cutoff)) hits.delete(k);
   }
 
   if (recent.length >= RATE_LIMIT_MAX) {

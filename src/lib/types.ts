@@ -84,6 +84,13 @@ export interface OpenFile {
   date: string;
   responses: WitnessResponse[];
   isSample: boolean;
+  /**
+   * True when the file arrived in a URL fragment rather than being compiled
+   * here. A fragment is authored entirely by whoever wrote the link, so its
+   * contents carry no authority — the sheet says so rather than presenting
+   * someone else's text as this app's finding.
+   */
+  fromLink: boolean;
 }
 
 export interface SynthesizeRequest {

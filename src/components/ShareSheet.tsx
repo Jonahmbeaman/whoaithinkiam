@@ -65,6 +65,12 @@ export default function ShareSheet({
       if (result === "downloaded") setStatus("Saved to your device.");
       else if (result === "failed") setStatus("The handoff failed.");
       else setStatus("");
+    } catch {
+      // renderShareCard rejects when the canvas is unsupported or toBlob
+      // returns null, which a low-end phone will do on a 1080x1920 buffer
+      // under memory pressure. Without this the button reset itself and said
+      // nothing at all, which reads as a dead control.
+      setStatus("Couldn't build the image. Send the link instead.");
     } finally {
       setBusy(false);
     }

@@ -31,6 +31,14 @@ const PAGE_H = 1056;
 const STAGE_GUTTER = 20;
 const MIN_SHEET_W = 700;
 const MIN_SHEET_H = 780;
+// 15.2px body copy over a ~10px readable floor. The viewport thresholds above
+// assume a sheet is PAGE_H tall, which is only true until the analyst writes
+// long: sheets have a min-height, not a fixed height, so a wordy dossier grows
+// and every page shares the smaller scale. Measured, an 8-bullet dossier with
+// long claims reached 1601px and drove body copy to 7.3px on a 1512x860
+// laptop — the exact failure pagination exists to prevent. So the measurement
+// gets a vote too.
+const MIN_SCALE = 10 / 15.2;
 
 const dash = (v?: string) =>
   v && v.trim() && v.trim().toUpperCase() !== "UNKNOWN" ? v : "—";
@@ -149,7 +157,8 @@ export default function DossierView({
   responses,
   onNewCase,
   onHome,
-  isSample = false,
+  isSample,
+  fromLink,
 }: {
   dossier: Dossier;
   providers: string[];
@@ -157,13 +166,31 @@ export default function DossierView({
   responses: WitnessResponse[];
   onNewCase: () => void;
   onHome: () => void;
-  isSample?: boolean;
+  isSample: boolean;
+  fromLink: boolean;
 }) {
   const [shareOpen, setShareOpen] = useState(false);
   const [statementsOpen, setStatementsOpen] = useState(false);
   const [page, setPage] = useState(0);
-  // True when the viewport cannot show a Letter sheet at a readable size.
-  const [documentMode, setDocumentMode] = useState(false);
+  // Two independent reasons to abandon the sheet, OR-ed together. The
+  // viewport one is a media query; the content one is latched from a
+  // measurement that only exists while sheets are mounted, so it is one-way —
+  // flipping it back would unmount the thing that produced the measurement
+  // and the two could drive each other in a loop.
+  const [viewportTooSmall, setViewportTooSmall] = useState(false);
+  const [contentTooTall, setContentTooTall] = useState(false);
+
+  // A different dossier deserves a fresh attempt at the sheet layout. This is
+  // the adjust-state-during-render pattern rather than an effect: doing it in
+  // an effect would render one frame of the wrong layout first, and React
+  // flags synchronous setState inside effects for exactly that reason.
+  const [measuredFor, setMeasuredFor] = useState(dossier);
+  if (measuredFor !== dossier) {
+    setMeasuredFor(dossier);
+    setContentTooTall(false);
+  }
+
+  const documentMode = viewportTooSmall || contentTooTall;
 
   const b = dossier.basicInfo;
   const conf = dossier.confidence;
@@ -331,17 +358,25 @@ export default function DossierView({
 
   const sheetIdentification = buildIdentification(false);
 
+  // Only sheets with something on them. The system prompt permits empty
+  // arrays when the evidence is thin, which previously produced a "Page 2 of
+  // 3" containing a masthead, a footer and nothing else.
   const sheets = [
-    { title: "Identification", body: sheetIdentification },
-    { title: "Pattern of Life", body: sheetPattern },
-    { title: "Assessment", body: sheetAssessment },
-  ];
+    { title: "Identification", body: sheetIdentification, has: true },
+    { title: "Pattern of Life", body: sheetPattern, has: info.length + misc.length > 0 },
+    { title: "Assessment", body: sheetAssessment, has: psych.length > 0 || !!trap },
+  ].filter((s) => s.has);
   const pageCount = sheets.length;
 
   const turn = useCallback(
     (d: number) => setPage((p) => Math.min(pageCount - 1, Math.max(0, p + d))),
     [pageCount],
   );
+
+  // Derived rather than clamped in an effect: a dossier with fewer sheets than
+  // the one being viewed would otherwise render an out-of-range page for one
+  // frame before a second render corrected it.
+  const activePage = Math.min(page, pageCount - 1);
 
   useEffect(() => {
     // Driven off the viewport rather than off the measured scale: deciding the
@@ -350,21 +385,24 @@ export default function DossierView({
     const mq = window.matchMedia(
       `(max-width: ${MIN_SHEET_W}px), (max-height: ${MIN_SHEET_H - 1}px)`,
     );
-    const sync = () => setDocumentMode(mq.matches);
+    const sync = () => setViewportTooSmall(mq.matches);
     sync();
     mq.addEventListener("change", sync);
     return () => mq.removeEventListener("change", sync);
   }, []);
 
   useEffect(() => {
-    if (documentMode) return;
+    // Also inert while a modal is open: the arrows used to turn pages behind
+    // the overlay, so dismissing the modal revealed a different sheet than
+    // the one the reader left.
+    if (documentMode || shareOpen || statementsOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft") turn(-1);
       if (e.key === "ArrowRight") turn(1);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [documentMode, turn]);
+  }, [documentMode, shareOpen, statementsOpen, turn]);
 
   const stageRef = useRef<HTMLDivElement>(null);
   const sheetRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -387,8 +425,16 @@ export default function DossierView({
       );
       const availW = stage.clientWidth - STAGE_GUTTER * 2;
       const availH = stage.clientHeight - STAGE_GUTTER * 2;
+      const next = Math.min(1, availW / PAGE_W, availH / tallest);
+      // A sheet that has grown past what this window can show legibly is not
+      // a sheet any more. Hand the whole file to the scrolling layout, where
+      // it renders at full size and length stops mattering.
+      if (next < MIN_SCALE) {
+        setContentTooTall(true);
+        return;
+      }
       setStackH(tallest);
-      setScale(Math.min(1, availW / PAGE_W, availH / tallest));
+      setScale(next);
     };
     compute();
     const ro = new ResizeObserver(compute);
@@ -424,6 +470,9 @@ export default function DossierView({
         <div>File Nº {fileNo}</div>
         <div>Confidence: {conf}%</div>
         <div>Compiled {dateLabel}</div>
+        {fromLink && (
+          <div className="label text-classified">Sent to you — not compiled here</div>
+        )}
         {!compact && (
           <div className="label">
             Page {n} of {pageCount}
@@ -499,7 +548,7 @@ export default function DossierView({
               ref={(el) => {
                 sheetRefs.current[i] = el;
               }}
-              aria-hidden={i !== page}
+              aria-hidden={i !== activePage}
               className="paper inset-x-0 top-0 flex flex-col overflow-hidden shadow-[0_30px_80px_-20px_rgba(0,0,0,0.9)]"
               style={{
                 // Inline, not the `absolute` utility: globals.css declares
@@ -510,8 +559,8 @@ export default function DossierView({
                 // pages 2 and 3 rendered below the viewport.
                 position: "absolute",
                 minHeight: PAGE_H,
-                opacity: i === page ? 1 : 0,
-                pointerEvents: i === page ? "auto" : "none",
+                opacity: i === activePage ? 1 : 0,
+                pointerEvents: i === activePage ? "auto" : "none",
                 transition: "opacity 160ms ease",
               }}
             >
@@ -541,13 +590,13 @@ export default function DossierView({
           </div>
 
           <div className="flex items-center gap-2">
-            <button onClick={() => turn(-1)} disabled={page === 0} aria-label="Previous page" className={pageBtn}>
+            <button onClick={() => turn(-1)} disabled={activePage === 0} aria-label="Previous page" className={pageBtn}>
               ‹
             </button>
             <span className="label text-[0.66rem] text-paper/70">
-              {page + 1} / {pageCount}
+              {activePage + 1} / {pageCount}
             </span>
-            <button onClick={() => turn(1)} disabled={page === pageCount - 1} aria-label="Next page" className={pageBtn}>
+            <button onClick={() => turn(1)} disabled={activePage === pageCount - 1} aria-label="Next page" className={pageBtn}>
               ›
             </button>
           </div>

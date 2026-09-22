@@ -64,9 +64,11 @@ export default function Landing({
         </div>
       </div>
 
-      {/* The one canonical privacy statement. It is repeated verbatim wherever
-          the subject needs it, and it is precise rather than absolute: the
-          ten-minute clause is real and is the reason this can be stated at all. */}
+      {/* The full privacy statement. Precise rather than absolute, and every
+          clause has to stay literally true: the ten-minute claim is what the
+          unconditional sweep in guard.ts exists to honour. Shorter
+          restatements elsewhere (the sheet footer, the share sheet) may be
+          briefer but must not contradict this one. */}
       <p className="mt-6 px-2 text-center text-[0.72rem] leading-relaxed text-paper/50 tw">
         No account, no cookies, no database. We never ask for an AI password —
         you paste each reply yourself. Your statements pass through once and are

@@ -107,6 +107,12 @@ export async function readSharedCase(hash: string): Promise<SharedCase | null> {
   if (!supported() || !hash.startsWith(SHARE_PREFIX)) return null;
   const encoded = hash.slice(SHARE_PREFIX.length);
   if (!encoded) return null;
+  // The read side must be at least as strict as the write side. Without this
+  // the cap was enforced only when BUILDING a link, so a hand-crafted fragment
+  // could carry a megabyte of gzip that expands to hundreds of megabytes and
+  // hangs the recipient's tab. An OOM is not a catchable rejection, so the
+  // try/catch below would not have helped.
+  if (encoded.length > MAX_ENCODED_CHARS) return null;
   try {
     const parsed = JSON.parse(await gunzip(fromBase64Url(encoded))) as SharedCase;
     if (parsed?.v !== 1 || !parsed.dossier?.codeName) return null;

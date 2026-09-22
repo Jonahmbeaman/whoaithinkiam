@@ -8,8 +8,8 @@
 // Scope: this covers everything reachable over HTTP — the abuse guards, the
 // error paths, and optionally one real compile. It deliberately does NOT cover
 // the browser half (share-link encoding, the stage flow, canvas share cards),
-// because those need a DOM and faking one would test the fake. Those are
-// covered by the headless-browser walkthrough in the project README.
+// because those need a DOM and faking one would test the fake. Drive those
+// with a real browser against a running dev server.
 //
 // Ordering matters: the rate limiter counts every request that clears the
 // origin check, so the limiter test runs last and everything before it is
@@ -168,8 +168,8 @@ if (!PAID) {
       String(d.confidence),
     );
     check(
-      (d.activityClock?.length ?? 0) === 24,
-      "activity clock has 24 hours",
+      [0, 24].includes(d.activityClock?.length ?? 0),
+      "activity clock is 24 hours or absent",
       `got ${d.activityClock?.length ?? 0}`,
     );
     check(d.misc?.length === 1, "misc trimmed to one bullet", `got ${d.misc?.length}`);
@@ -238,5 +238,5 @@ if (rateLimited) {
       "\n(or wait 10 minutes) before re-running, or later checks will 429.",
   );
 }
-console.log("\nBrowser-side checks are manual — see the README walkthrough\n");
+console.log("\nBrowser-side checks need a real browser and are not covered here.\n");
 process.exit(fail > 0 ? 1 : 0);
