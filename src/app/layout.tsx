@@ -1,14 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Special_Elite, Courier_Prime, Oswald } from "next/font/google";
+import { Courier_Prime, Oswald } from "next/font/google";
 import "./globals.css";
-
-// Typewriter face for the dossier body — the "typed report" look.
-const specialElite = Special_Elite({
-  weight: "400",
-  subsets: ["latin"],
-  variable: "--font-typewriter",
-  display: "swap",
-});
 
 // Cleaner monospace for longer readable body text.
 const courierPrime = Courier_Prime({
@@ -76,7 +68,7 @@ export default function RootLayout({
         // Browser extensions (Grammarly, etc.) inject attributes onto <body>
         // before hydration; this tolerates that mismatch on this element only.
         suppressHydrationWarning
-        className={`${specialElite.variable} ${courierPrime.variable} ${oswald.variable}`}
+        className={`${courierPrime.variable} ${oswald.variable}`}
       >
         {children}
       </body>

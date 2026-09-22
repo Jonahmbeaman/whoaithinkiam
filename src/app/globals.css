@@ -9,16 +9,13 @@
 @theme {
   --color-paper: #e9e2d0;
   --color-paper-dark: #d7cbb0;
-  --color-manila: #d3b072;
   --color-ink: #14120e;
   --color-ink-soft: #3a3327;
   --color-signal: #c25a24; /* burnt intelligence orange — primary accent */
   --color-teal: #2c6e68; /* agency teal — section headers */
   --color-classified: #a5312c; /* stamp / redaction red */
   --color-olive: #6b6a4f;
-  --color-amber: #c98a3d;
 
-  --font-typewriter: var(--font-typewriter), "Courier New", monospace;
   --font-mono-body: var(--font-mono-body), "Courier New", monospace;
   --font-stamp: var(--font-stamp), "Arial Narrow", sans-serif;
 }
@@ -109,33 +106,6 @@ body {
   clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%);
 }
 
-/* ---- section bar (teal strip, like agency dividers) ---- */
-.section-bar {
-  background: var(--color-teal);
-  color: var(--color-paper);
-  font-family: var(--font-stamp);
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  font-weight: 600;
-}
-
-/* ---- field cell ---- */
-.field-cell {
-  border: 1.5px solid rgba(20, 18, 14, 0.5);
-  background: rgba(255, 255, 255, 0.14);
-}
-.field-label {
-  font-family: var(--font-stamp);
-  text-transform: uppercase;
-  letter-spacing: 0.13em;
-  font-weight: 700;
-  color: var(--color-teal);
-}
-.field-value {
-  font-family: var(--font-mono-body);
-  color: var(--color-ink);
-}
-
 /* ---- stamps ---- */
 .stamp {
   font-family: var(--font-stamp);
@@ -149,24 +119,6 @@ body {
   opacity: 0.86;
   mix-blend-mode: multiply;
 }
-.stamp-slam {
-  animation: stamp-slam 420ms cubic-bezier(0.2, 0.8, 0.3, 1.4) both;
-}
-@keyframes stamp-slam {
-  0% {
-    transform: scale(2.4) rotate(-16deg);
-    opacity: 0;
-  }
-  60% {
-    transform: scale(0.92) rotate(-11deg);
-    opacity: 0.95;
-  }
-  100% {
-    transform: scale(1) rotate(-8deg);
-    opacity: 0.86;
-  }
-}
-
 /* ---- redacted photo / silhouette box ---- */
 .silhouette {
   background:
@@ -191,37 +143,6 @@ body {
     repeat-x;
 }
 
-/* ---- redaction bar (click to reveal) ---- */
-.redaction {
-  background: var(--color-ink);
-  color: transparent;
-  cursor: pointer;
-  border-radius: 2px;
-  transition:
-    background 500ms ease,
-    color 500ms ease;
-  user-select: none;
-}
-.redaction.revealed {
-  background: transparent;
-  color: var(--color-ink);
-  cursor: default;
-  user-select: text;
-}
-
-/* ---- typewriter reveal (directive only) ---- */
-.typewriter {
-  overflow: hidden;
-  border-right: 2px solid var(--color-signal);
-  white-space: pre-wrap;
-  animation: blink-caret 900ms step-end infinite;
-}
-@keyframes blink-caret {
-  50% {
-    border-color: transparent;
-  }
-}
-
 /* ---- page rise ---- */
 .rise {
   animation: rise 500ms ease both;
@@ -238,16 +159,7 @@ body {
 }
 
 /* ---- reduced motion ---- */
-@media (prefers-reduced-motion: reduce) {
-  .stamp-slam,
-  .rise,
-  .typewriter {
-    animation: none !important;
-  }
-  .typewriter {
-    border-right: none;
-  }
-}
+reduced motion
 
 textarea {
   font-family: var(--font-mono-body);

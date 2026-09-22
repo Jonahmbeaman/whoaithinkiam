@@ -9,22 +9,16 @@ import React from "react";
 // ProfileBlock, Fingerprints) were built for an earlier multi-page layout and
 // deleted once the design collapsed to a single sheet.
 
-/** Rubber-stamp text. `slam` plays the one-shot impact animation. */
+/** Rubber-stamp text. */
 export function Stamp({
   children,
-  slam = false,
   className = "",
 }: {
   children: React.ReactNode;
-  slam?: boolean;
   className?: string;
 }) {
   return (
-    <span
-      className={`stamp inline-block text-sm ${slam ? "stamp-slam" : ""} ${className}`}
-    >
-      {children}
-    </span>
+    <span className={`stamp inline-block text-sm ${className}`}>{children}</span>
   );
 }
 
