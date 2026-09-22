@@ -1,4 +1,4 @@
-# DOSSIER — find out what AI thinks of you
+# DOSSIER — the file AI has been keeping on you
 
 A single-page web app styled as a 1940s–50s noir detective case file. Every AI
 you talk to has quietly built a theory of who you are. Dossier interrogates them
@@ -15,12 +15,33 @@ to a third-party site. So the flow is deliberately manual and privacy-clean:
    copy the prompt in. Send it there, then **paste the reply back** into Dossier.
 3. Hit **Compile Dossier** — one serverless call to the Claude API synthesizes
    all statements into a single case file.
-4. Read it, share a hand-drawn image card, and it's saved to your **Case History**
-   (localStorage only — nothing is stored server-side).
+4. Read it. Share it as an image card, or as a link that carries the whole
+   file inside its URL fragment.
 
-The intake step is a pluggable module (`IntakeModule.collectResponse` in
-`src/lib/providers.ts`); if a real "read my AI memory" API ever ships, implement
-that one method and slot it in.
+Each witness is asked for what it actually holds. A chat assistant is asked
+about conversation; Perplexity is asked for its query log, because a search
+history is closer to intent than anything a person says out loud, and because
+no prompt turns a search product into a profiler. Per-provider prompts live in
+`src/lib/providers.ts`.
+
+## Privacy
+
+**No account, no cookies, no database, no history.** A dossier lives in the tab
+and in whatever link you choose to send. Nothing is written to `localStorage`,
+`sessionStorage`, or a cookie; there is no analytics, no telemetry, and no
+third-party script. Webfonts are self-hosted at build time, so a page load
+makes no request to any domain but this one.
+
+Your statements are POSTed once to `/api/synthesize`, forwarded once to the
+Anthropic API, and never written down on either hop — the route logs token
+counts and error names, never content.
+
+Three carve-outs, stated rather than glossed:
+
+- The rate limiter holds your IP in memory for ten minutes so the endpoint
+  cannot be drained, then drops it. See `src/lib/guard.ts`.
+- Vercel keeps its own platform access logs, as any host does.
+- The share image is a file you save yourself.
 
 ## Setup
 
@@ -57,23 +78,33 @@ return schema-validated JSON via structured outputs.
 src/
 ├── app/
 │   ├── layout.tsx              # fonts (typewriter/stamp) + OG meta
-│   ├── globals.css             # noir palette, paper grain, stamp/typewriter/redaction
+│   ├── globals.css             # noir palette, paper grain, stamps, torn dividers
+│   ├── error.tsx               # route-level fallback; recovery lives outside the crash
 │   ├── page.tsx                # single-page orchestrator (landing→picker→intake→dossier)
 │   └── api/synthesize/route.ts # the one serverless function (Claude structured output)
-├── components/                 # Landing, WitnessPicker, Intake, DossierView, ShareSheet, CaseHistory, ui
+├── components/                 # Landing, WitnessPicker, Intake, DossierView,
+│                               # ShareSheet, DossierBoundary, ui
 └── lib/
-    ├── types.ts                # Dossier / CaseFile / request contract
+    ├── types.ts                # Dossier + request contract
+    ├── normalize.ts            # boundary coercer for untrusted dossiers; never throws
     ├── prompt.ts               # the interrogation prompt (bracketed sections)
-    ├── providers.ts            # witnesses + deep links + pluggable intake interface
-    ├── storage.ts              # localStorage case history + export/import
+    ├── providers.ts            # witnesses, per-provider prompts, deep links
+    ├── guard.ts                # origin allowlist, rate limit, size caps
+    ├── shareLink.ts            # gzip + base64url the file into the URL fragment
     ├── shareImage.ts           # <canvas> share cards (9:16 + 1:1) + Web Share API
-    └── sample.ts               # hardcoded sample dossier (design + offline preview)
+    └── sample.ts               # the specimen dossier (also the only shape check)
 ```
+
+There is no storage layer. That is the point — see Privacy above.
 
 ## Design system
 
 Aged paper, manila, ink, oxblood stamp red, faded olive, desk-lamp amber.
-Typewriter body (Special Elite / Courier Prime), condensed grotesque stamps
-(Oswald). Paper grain via SVG noise, torn dividers, click-to-declassify redaction
-bars, a slamming CONFIDENTIAL stamp, and a typewriter-revealed verdict. Respects
-`prefers-reduced-motion`. Mobile-first.
+Typewriter body (Courier Prime), condensed grotesque stamps (Oswald). Paper
+grain via SVG noise, torn dividers, and a CLASSIFIED stamp. Respects
+`prefers-reduced-motion`.
+
+The dossier is three US-Letter sheets you turn through, scaled to fit the
+window. Below 700px wide or 780px tall it becomes a scrolling document at full
+size instead — a Letter page shrunk into a phone is unreadable, and that is a
+function of viewport height as much as width.

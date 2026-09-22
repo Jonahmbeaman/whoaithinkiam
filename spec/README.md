@@ -7,7 +7,7 @@ reasoning is the valuable part and it would otherwise live only in a chat log.
 | File | What it is |
 |---|---|
 | `field-schema.ts` | The type system for a dossier field: its category, redaction tier, shareability, and the safety invariants that bind them. |
-| `field-registry.ts` | 61 curated fields the dossier will eventually infer, each with its own inference prompt, voice note, and tier. |
+| `field-registry.ts` | 73 curated fields the dossier will eventually infer, each with its own inference prompt, voice note, and tier. |
 
 ## Why these are not in `src/`
 

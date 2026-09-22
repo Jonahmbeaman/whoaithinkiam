@@ -5,7 +5,7 @@ One monolithic system prompt cannot be tuned — changing it moves every section
 at once. So each section gets its **own** prompt contract, and each contract is
 independently testable and independently optimizable.
 
-This file is the method. `src/lib/fieldRegistry.ts` is the data.
+This file is the method. `spec/field-registry.ts` is the data.
 
 ---
 
@@ -118,15 +118,15 @@ tuning pass cheap.
 
 ## 4. Wiring status
 
-`fieldRegistry.ts` (61 fields) and `fields.ts` currently have **zero importers**
+`spec/field-registry.ts` (73 fields) and `spec/field-schema.ts` currently have **zero importers**
 — the live app runs on the older fixed shape in `types.ts`. The registry already
 carries axes `inference_prompt`, `voice_note`, `redaction_tier`, `shareable`,
 `share_hook_copy`, `sensitive`, `distressGuard`.
 
 To make this method operational:
 
-1. Extend `DossierField` in `fields.ts` with the axes from sections A, B, C, E
-   above (all optional, with defaults, so existing 61 entries still parse).
+1. Extend `DossierField` in `spec/field-schema.ts` with the axes from sections A, B, C, E
+   above (all optional, with defaults, so existing 73 entries still parse).
 2. Add `buildSectionPrompt(field)` — deterministic string assembly from the
    axes. No prose written by hand at call time.
 3. Replace the hardcoded `SYSTEM_PROMPT` in `route.ts` with prompts assembled
