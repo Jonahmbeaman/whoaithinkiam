@@ -297,7 +297,18 @@ export async function POST(
     const message = await client.messages.create({
       model: MODEL,
       max_tokens: 16000,
-      system: SYSTEM_PROMPT,
+      // The system prompt is byte-identical on every request, so it is cached
+      // server-side. Cache reads cost ~10% of normal input tokens, which is
+      // most of the input bill for a request whose variable part (the witness
+      // statements) is small. Caching is a PREFIX match: anything that changes
+      // this string invalidates the cache for every user.
+      system: [
+        {
+          type: "text",
+          text: SYSTEM_PROMPT,
+          cache_control: { type: "ephemeral" },
+        },
+      ],
       messages: [{ role: "user", content: userContent }],
       thinking: { type: "adaptive" },
       output_config: {
@@ -318,6 +329,14 @@ export async function POST(
         cors,
       );
     }
+
+    // Token accounting only — never the statements themselves. cacheRead > 0
+    // confirms the prompt cache is live; a persistent 0 means something is
+    // silently invalidating the prefix.
+    const u = message.usage;
+    console.log(
+      `synthesize ok: in=${u.input_tokens} cacheWrite=${u.cache_creation_input_tokens ?? 0} cacheRead=${u.cache_read_input_tokens ?? 0} out=${u.output_tokens}`,
+    );
 
     const dossier = JSON.parse(jsonText) as Dossier;
     return NextResponse.json({ ok: true, dossier }, { headers: cors });

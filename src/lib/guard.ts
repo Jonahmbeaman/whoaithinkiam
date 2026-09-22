@@ -22,17 +22,20 @@ import type { NextRequest } from "next/server";
 // strangers, move this to Vercel KV / Upstash so the window is shared.
 // ---------------------------------------------------------------------------
 
+// Tuning knobs. Not exported: route.ts needs only MAX_BODY_BYTES, and a
+// caller that could reach in and change a limit isn't a limit.
+
 /** Max witness statements in one filing (there are only six providers). */
-export const MAX_STATEMENTS = 6;
+const MAX_STATEMENTS = 6;
 
 /** Max combined characters across all statements (~15K tokens of input). */
-export const MAX_TOTAL_CHARS = 60_000;
+const MAX_TOTAL_CHARS = 60_000;
 
 /** Hard ceiling on the request body, checked before we parse it. */
 export const MAX_BODY_BYTES = 200_000;
 
-export const RATE_LIMIT_MAX = 5;
-export const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 
 function allowedOrigins(): string[] {
   const list = ["http://localhost:3000", "http://127.0.0.1:3000"];

@@ -14,14 +14,14 @@ import type { Dossier } from "./types";
 // A share link carries the compiled dossier only.
 // ---------------------------------------------------------------------------
 
-export const SHARE_PREFIX = "#d=";
+const SHARE_PREFIX = "#d=";
 
 // Browsers tolerate far longer, but past this a link stops being pasteable and
 // some chat apps truncate it. Past the cap we refuse rather than hand back a
 // link that silently breaks.
 const MAX_ENCODED_CHARS = 8000;
 
-export interface SharedCase {
+interface SharedCase {
   v: 1;
   codeName: string;
   date: string;

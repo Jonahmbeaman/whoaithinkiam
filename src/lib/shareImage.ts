@@ -370,7 +370,9 @@ export function renderShareCard(
 
 // ---- Web Share API with graceful fallbacks ----
 
-export function canShareFiles(): boolean {
+// Feature-probe rather than UA-sniff: Safari and Chrome disagree about
+// which share targets accept files, and the probe is the only honest answer.
+function canShareFiles(): boolean {
   return (
     typeof navigator !== "undefined" &&
     !!navigator.canShare &&
@@ -385,7 +387,7 @@ export function canShareFiles(): boolean {
   );
 }
 
-export type ShareResult = "shared" | "downloaded" | "cancelled" | "failed";
+type ShareResult = "shared" | "downloaded" | "cancelled" | "failed";
 
 export async function shareOrDownload(
   blob: Blob,

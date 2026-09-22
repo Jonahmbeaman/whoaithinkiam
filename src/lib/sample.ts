@@ -1,4 +1,4 @@
-import type { CaseFile, Dossier } from "./types";
+import type { Dossier } from "./types";
 
 // Hardcoded specimen for design iteration and the landing-page preview.
 export const SAMPLE_DOSSIER: Dossier = {
@@ -60,11 +60,3 @@ export const SAMPLE_DOSSIER: Dossier = {
   updateNote: "",
 };
 
-export const SAMPLE_CASE_FILE: CaseFile = {
-  id: "sample-0001",
-  date: new Date(0).toISOString(),
-  codeName: SAMPLE_DOSSIER.codeName,
-  providers: ["chatgpt", "claude"],
-  dossier: SAMPLE_DOSSIER,
-  responses: [],
-};
