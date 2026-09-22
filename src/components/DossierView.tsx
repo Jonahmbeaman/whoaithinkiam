@@ -132,7 +132,7 @@ export default function DossierView({
   isSample?: boolean;
 }) {
   const [shareOpen, setShareOpen] = useState(false);
-  const [bribeOpen, setBribeOpen] = useState(false);
+  const [tipOpen, setTipOpen] = useState(false);
   const [statementsOpen, setStatementsOpen] = useState(false);
 
   // Scale the fixed Letter sheet to fit the viewport (never upscale past 1:1).
@@ -369,10 +369,10 @@ export default function DossierView({
           </div>
           <div className="flex flex-wrap gap-2">
             <button
-              onClick={() => setBribeOpen(true)}
+              onClick={() => setTipOpen(true)}
               className="rounded-sm border border-classified bg-classified/10 px-3 py-1.5 label text-[0.68rem] text-classified transition hover:bg-classified hover:text-paper"
             >
-              🔍 Pay the investigator
+              🔍 Tip the investigator
             </button>
             <button
               onClick={() => setShareOpen(true)}
@@ -384,16 +384,16 @@ export default function DossierView({
         </div>
       </div>
 
-      {/* Pay-the-investigator modal */}
-      {bribeOpen && (
+      {/* Tip-the-investigator modal */}
+      {tipOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-ink/85 p-4"
-          onClick={() => setBribeOpen(false)}
+          onClick={() => setTipOpen(false)}
         >
           <div className="paper w-full max-w-md rounded-md p-5 shadow-[0_24px_60px_-16px_rgba(0,0,0,0.9)]" onClick={(e) => e.stopPropagation()}>
             <div className="mb-2 flex items-center justify-between">
-              <span className="label text-sm text-classified">Pay the investigator</span>
-              <button onClick={() => setBribeOpen(false)} className="label text-[0.7rem] text-ink/60 hover:text-ink">Close ✕</button>
+              <span className="label text-sm text-classified">Tip the investigator</span>
+              <button onClick={() => setTipOpen(false)} className="label text-[0.7rem] text-ink/60 hover:text-ink">Close ✕</button>
             </div>
             <p className="mb-3 text-[0.8rem] leading-snug text-ink/80 tw">
               A deep web investigation built from what your bots revealed. Off by default.
