@@ -442,7 +442,7 @@ export default function DossierView({
           <div className="paper relative mx-auto max-w-[680px] rounded-sm px-5 py-5 shadow-[0_20px_50px_-16px_rgba(0,0,0,0.9)]">
             {/* Sits beside the seal. In document mode the masthead stacks and
                 grows tall, so the sheet's top-32 placement landed on the title. */}
-            <div className="pointer-events-none absolute right-5 top-6 rotate-[8deg] opacity-70">
+            <div className="pointer-events-none absolute right-5 top-6 z-10 rotate-[8deg] opacity-70">
               <Stamp className="text-[0.7rem]">Classified</Stamp>
             </div>
             {masthead("Subject Profile", 1, true)}
@@ -516,7 +516,7 @@ export default function DossierView({
               }}
             >
               <div className="flex flex-1 flex-col px-10 py-8">
-                <div className="pointer-events-none absolute right-10 top-32 rotate-[8deg] opacity-70">
+                <div className="pointer-events-none absolute right-10 top-32 z-10 rotate-[8deg] opacity-70">
                   <Stamp className="text-[0.7rem]">Classified</Stamp>
                 </div>
                 {masthead(s.title, i + 1)}
