@@ -1,4 +1,4 @@
-import type { DossierField } from "./fields";
+import type { DossierField } from "./field-schema";
 
 // ============================================================================
 // FIELD REGISTRY — curated, safety-gated. Batches 01 + 02 (safe subset).
