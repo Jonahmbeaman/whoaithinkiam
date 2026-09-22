@@ -74,7 +74,7 @@ export function AgencySeal({ size = 58 }: { size?: number }) {
         style={{ fontFamily: "var(--font-stamp)" }}
       >
         <textPath href="#seal-top" startOffset="5%">
-          CONFIDENTIAL RECORDS
+          THE AGENCY
         </textPath>
       </text>
       <text
@@ -85,7 +85,7 @@ export function AgencySeal({ size = 58 }: { size?: number }) {
         style={{ fontFamily: "var(--font-stamp)" }}
       >
         <textPath href="#seal-bot" startOffset="26%">
-          DOSSIER DIVISION
+          BEHAVIORAL INTELLIGENCE
         </textPath>
       </text>
     </svg>
@@ -135,16 +135,16 @@ export function FieldGrid({
       {items.map((item, i) => (
         <div key={i} className="border-b border-r border-ink/70 px-2 py-1">
           <div className="flex items-baseline justify-between gap-1">
-            <span className="text-[0.5rem] uppercase tracking-[0.14em] text-ink/55">
+            <span className="min-w-0 truncate text-[0.62rem] uppercase tracking-[0.14em] text-ink/55">
               {item.label}
             </span>
             {typeof item.confidence === "number" && item.value !== "—" && (
-              <span className="text-[0.5rem] font-bold text-classified tw">
+              <span className="text-[0.62rem] font-bold text-classified tw">
                 {item.confidence}%
               </span>
             )}
           </div>
-          <div className="text-[0.85rem] font-bold leading-tight text-ink tw">
+          <div className="text-[0.95rem] font-bold leading-tight text-ink tw">
             {item.value}
           </div>
         </div>
