@@ -20,7 +20,7 @@ const courierPrime = Courier_Prime({
 
 // Condensed grotesque for stamps and ALL-CAPS labels.
 const oswald = Oswald({
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "700"],
   subsets: ["latin"],
   variable: "--font-stamp",
   display: "swap",
