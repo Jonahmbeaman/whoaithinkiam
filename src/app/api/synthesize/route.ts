@@ -16,7 +16,11 @@ import type {
 } from "@/lib/types";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+// Fluid compute allows 300s on every plan including Hobby. A two-witness
+// compile measured 30-35s, so 60 left almost no headroom: six witnesses, a
+// slow upstream, or a retry would have been cut off mid-report. 240 is a
+// ceiling for runaway calls, not a target.
+export const maxDuration = 240;
 
 const MODEL = process.env.DOSSIER_MODEL || "claude-opus-5";
 const MIN_STATEMENT_CHARS = 120;

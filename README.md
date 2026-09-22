@@ -39,13 +39,13 @@ Environment variables (`.env.local`):
 The key is read only by the serverless function and never reaches the browser.
 `.env*` is gitignored, and no key has ever been committed to this repository.
 
-## Deploy (Vercel free tier)
+## Deploy
 
-```bash
-vercel                       # link the project
-vercel env add ANTHROPIC_API_KEY   # paste the key when prompted
-vercel --prod
-```
+Live at <https://whoaithinkiam.vercel.app>. Vercel builds from GitHub `main`,
+so **merging to `main` deploys**. The Vercel CLI is not part of the loop.
+
+`ANTHROPIC_API_KEY` is set in the Vercel project's production environment. To
+change it: Vercel dashboard → project → Settings → Environment Variables.
 
 The single serverless function is `src/app/api/synthesize/route.ts`. It never
 logs request bodies (witness statements are personal) and forces the model to
